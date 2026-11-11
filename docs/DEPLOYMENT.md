@@ -28,6 +28,7 @@
 | `/new-aiops.html` | 全新 AIOps |
 | `/enterprise-space.html` | 企业空间 |
 | `/enterprise-organization.html` | 企业组织运营 |
+| `/agentos/` | 炼铁厂智能体平台（AgentOS） |
 
 页面之间使用相对路径，独立企业管理文档通过同源 iframe 打开。`cleanUrls: false` 保留 `.html` 文件名，保证新 AIOps 来源识别、企业管理切换和返回上下文。保持该设置；无需配置 SPA 通配重写。
 

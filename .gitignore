@@ -3,6 +3,7 @@
 !/.gitignore
 !/.vercelignore
 !/README.md
+!/index.html
 !/vercel.json
 !/dist/
 !/tests/
@@ -14,10 +15,12 @@
 !/dist/*.css
 !/dist/*.js
 !/dist/aiops/
+!/dist/agentos/
 /tests/*
 !/tests/check-*.js
 /docs/*
 !/docs/DEPLOYMENT.md
+!/docs/superpowers/
 
 # Never commit local credentials, machine state, or generated artifacts.
 **/.DS_Store
