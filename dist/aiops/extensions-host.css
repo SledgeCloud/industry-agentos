@@ -1,0 +1,11 @@
+body.embedded-operations{--blue:#1f82eb;--light:#f5f5f5;--text:#333;--muted:#8c8c8c;--line:#ececec;min-width:0}
+.embedded-operations>.top,.embedded-operations .shell>nav,.embedded-operations .shell>.chat{display:none!important}
+body.embedded-operations .shell{display:block!important;height:100vh!important;min-width:0!important}
+.embedded-operations .shell>main{display:block!important;width:100%;height:100%;padding:24px 32px 40px;overflow:auto;background:#fff}
+.embedded-operations h1{font-size:16px;line-height:24px;font-weight:600;letter-spacing:0}
+.embedded-operations .heading{margin-bottom:24px}
+.embedded-operations button,.embedded-operations input,.embedded-operations select{font-size:13px}
+.embedded-operations .primary{background:#333;border-color:#333}
+.embedded-operations .primary:hover{background:#171717}
+.embedded-operations .ontology-knowledge-page{max-width:none}
+@media(max-width:700px){.embedded-operations .shell>main{padding:20px 16px}}

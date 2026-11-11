@@ -1,0 +1,72 @@
+/* Sidebar actions share the Workbench hover and popover tokens. */
+.ws-nav-row { position: relative; border-radius: 8px; }
+.ws-nav-row .aiops-nav-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; text-align: left; }
+.ws-nav-row .aiops-nav-item { position: relative; padding-right: 32px; }
+.ws-nav-row.is-folder-row .aiops-nav-item { padding-right: 12px; }
+.ws-nav-actions { position: absolute; right: 4px; top: 4px; display: flex; gap: 2px; opacity: 0; pointer-events: none; }
+.ws-nav-row:hover .ws-nav-actions,
+.ws-nav-row:focus-within .ws-nav-actions,
+.ws-nav-row:has(.ws-nav-action[aria-expanded="true"]) .ws-nav-actions { opacity: 1; pointer-events: auto; }
+.ws-nav-row:hover > .aiops-nav-item { background: var(--hover, #f5f5f5); }
+.ws-nav-row:hover > .aiops-nav-item.is-active { background: var(--selected, #e5f4ff); }
+.ws-nav-row.is-folder-row:hover .aiops-nav-item,
+.ws-nav-row.is-folder-row:focus-within .aiops-nav-item,
+.ws-nav-row.is-folder-row:has(.ws-nav-action[aria-expanded="true"]) .aiops-nav-item { padding-right: 60px; }
+.ws-nav-action { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; color: var(--text-secondary, #8c8c8c); }
+.ws-nav-action svg { width: 14px; height: 14px; }
+.ws-nav-action:hover,
+.ws-nav-action[aria-expanded="true"] { color: var(--text-primary, #111); background: var(--divider, #e6e6e6); }
+.ws-nav-clock { position: absolute; right: 9px; top: 9px; width: 14px; height: 14px; color: var(--text-secondary, #8c8c8c); }
+.ws-nav-clock svg { width: 14px; height: 14px; }
+.ws-nav-row:hover .ws-nav-clock,
+.ws-nav-row:focus-within .ws-nav-clock,
+.ws-nav-row:has(.ws-nav-action[aria-expanded="true"]) .ws-nav-clock { visibility: hidden; }
+.ws-nav-menu { position: fixed; z-index: 110; width: 156px; padding: var(--popover-pad, 6px); border: 1px solid var(--popover-border, #ececec); border-radius: var(--popover-radius, 14px); background: var(--popover-bg, #fff); box-shadow: var(--popover-shadow); }
+.ws-nav-menu button { display: flex; align-items: center; gap: 8px; width: 100%; height: 34px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: var(--text, #333); }
+.ws-nav-menu button svg { width: 15px; height: 15px; }
+.ws-nav-menu button:hover,
+.ws-nav-menu button:focus-visible { background: var(--hover, #f5f5f5); outline: none; }
+.ws-nav-menu .is-danger { color: #b42318; }
+.ws-nav-modal { z-index: 120; }
+.ws-nav-modal .sm-dialog { max-width: 560px; }
+.ws-nav-modal .sm-dialog.is-compact { max-width: 440px; }
+.ws-nav-modal form { display: flex; flex-direction: column; min-height: 0; }
+.ws-nav-modal .sm-body { gap: 0; }
+.ws-nav-modal .sm-foot { justify-content: flex-end; }
+.ws-nav-modal .sm-close svg { width: 18px; height: 18px; }
+.ws-nav-modal .sm-input input { padding-right: 12px; }
+.ws-nav-modal .sm-btn-primary.is-danger { background: #b42318; }
+.ws-nav-modal .sm-btn-primary.is-danger:hover { background: #912018; }
+.ws-scope-field { margin-top: 20px; }
+.ws-scope { position: relative; }
+.ws-scope-control { position: relative; display: flex; align-items: flex-start; min-height: 38px; padding: 5px 32px 5px 6px; border: 1px solid #e3e3e3; border-radius: 8px; background: #fff; cursor: pointer; }
+.ws-scope-control:hover { border-color: #cfcfcf; }
+.ws-scope-control.is-open,
+.ws-scope-control:focus-within { border-color: var(--file-blue, #0d99ff); box-shadow: 0 0 0 3px rgba(13,153,255,.12); }
+.ws-scope-tags { display: flex; flex: 1; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.ws-scope-tag { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 24px; padding: 2px 5px 2px 8px; border-radius: 5px; background: var(--hover, #f5f5f5); color: var(--text, #333); font-size: 12px; }
+.ws-scope-tag > span { overflow-wrap: anywhere; }
+.ws-scope-tag button { display: flex; flex: 0 0 16px; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; box-sizing: border-box; color: var(--text-secondary); border-radius: 3px; }
+.ws-scope-tag button:hover { background: var(--divider); color: var(--text); }
+.ws-scope-tag svg { width: 12px; height: 12px; }
+.ws-scope-trigger { min-height: 26px; padding: 0 5px; text-align: left; font-size: 12px; color: var(--text-secondary); }
+.ws-scope-arrow { position: absolute; right: 8px; top: 10px; display: flex; color: var(--text-secondary); }
+.ws-scope-arrow svg { width: 16px; height: 16px; }
+.ws-scope-panel { position: fixed; z-index: 125; display: grid; grid-template-columns: 42% 58%; margin: 0; overflow: hidden; border: 1px solid var(--popover-border, #ececec); border-radius: 10px; background: #fff; box-shadow: var(--popover-shadow); }
+.ws-scope-panel[hidden] { display: none; }
+.ws-scope-scenes, .ws-scope-options { min-height: 0; max-height: inherit; overflow: auto; padding: 6px; }
+.ws-scope-scenes { border-right: 1px solid var(--divider, #e6e6e6); }
+.ws-scope-heading { padding: 8px; font-size: 11px; line-height: 16px; color: var(--text-secondary); }
+.ws-scope-scene { display: flex; align-items: center; border-radius: 6px; }
+.ws-scope-scene-check { display: flex; align-items: center; align-self: stretch; padding: 0 0 0 8px; cursor: pointer; }
+.ws-scope-scene button { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex: 1; min-width: 0; min-height: 34px; padding: 6px 8px; border-radius: 6px; text-align: left; font-size: 12px; }
+.ws-scope-scenes button span { min-width: 0; overflow-wrap: anywhere; }
+.ws-scope-scenes button svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text-secondary); }
+.ws-scope-scene:hover, .ws-scope-option:hover { background: var(--hover); }
+.ws-scope-scene.is-active { background: var(--selected); }
+.ws-scope-option { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 8px; border-radius: 6px; font-size: 12px; line-height: 18px; cursor: pointer; }
+.ws-scope-check input { width: 14px; height: 14px; flex-shrink: 0; margin: 0; accent-color: var(--ink, #171717); }
+.ws-form-error { margin: 12px 0 0; color: #b42318; font-size: 12px; }
+.ws-delete-copy { margin: 0 0 8px; font-size: 14px; line-height: 22px; overflow-wrap: anywhere; }
+.ws-delete-note { margin: 0; font-size: 13px; line-height: 21px; color: var(--text-secondary); }
+@media (hover: none) { .ws-nav-actions { opacity: 1; pointer-events: auto; } .ws-nav-clock { visibility: hidden; } .ws-nav-row.is-folder-row .aiops-nav-item { padding-right: 60px; } }

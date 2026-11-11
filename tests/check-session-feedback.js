@@ -1,0 +1,63 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const stored=new Map(),localStorage={getItem:key=>stored.get(key)||null,setItem:(key,value)=>stored.set(key,String(value))};
+const nodes={},jobs=new Map();let job=0;
+const node=id=>nodes[id]??=( {innerHTML:'',value:'',textContent:'',dataset:{},scrollTop:0,scrollHeight:1000,clientHeight:600,focus(){},setAttribute(){}} );
+const legacy=vm.createContext({console,localStorage,document:{getElementById:node,querySelectorAll:()=>[],addEventListener(){},activeElement:{focus(){}},body:{classList:{add(){},remove(){},toggle(){}}}},setTimeout(fn){jobs.set(++job,fn);return job},clearTimeout:id=>jobs.delete(id)});
+vm.runInContext(fs.readFileSync('dist/index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1],legacy);
+const old=code=>vm.runInContext(code,legacy),clone=(ctx,code)=>JSON.parse(vm.runInContext(`JSON.stringify(${code})`,ctx));
+const key='agentos.asset-agent-analysis.v1';
+old("useAssetAgent('sales')");node('asset-chat-dialog').dataset.agent='sales';
+const greeting=old('acSession().messages[0].id');
+old(`acFeedbackOpen('${greeting}','up');acFeedbackToggle('${greeting}',0);acFeedbackSave('${greeting}')`);
+node('asset-chat-input').value='看一下本周分货结果';old('sendAssetMessage()');
+let count=0;while(jobs.size){assert(++count<2000);const [id,fn]=jobs.entries().next().value;jobs.delete(id);fn();}
+const reply=old('acSession().messages.at(-1).id');
+old(`acFeedbackOpen('${reply}','down');acFeedbackToggle('${reply}',2);acMessage('${reply}').feedbackDraft.reason='需要补充经销商与 EAN 的明细';acFeedbackSave('${reply}')`);
+const source=fs.readFileSync('dist/aiops-extensions.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+function load(){const listeners={},ctx=vm.createContext({console,localStorage,setTimeout(){},clearTimeout(){},window:{addEventListener:(type,fn)=>listeners[type]=fn}});vm.runInContext(source.slice(0,source.lastIndexOf('\nstate.composerSkill=null;')),ctx);return {ctx,listeners};}
+const {ctx,listeners}=load(),run=code=>vm.runInContext(code,ctx),read=code=>clone(ctx,code);
+run("state.page='线上会话分析';state.range=7;state.observedDetail={index:8,tab:'messages',turn:0,format:'readable'}");
+assert.equal(read('observedSessions.length'),9);assert.equal(read('filteredObservedSessions()[0].index'),8);
+const session=read('observedSessions[8]'),record=read('sdCurrent().record');
+assert.equal(session.agent,'销售智能分货助手');assert.equal(record.messages.length,3);assert.equal(record.turns.length,2);
+assert.equal(record.turns[0].input,null,'Opening greeting must not invent a user message');assert.equal(record.turns[0].label,'开场回复');
+assert.equal(record.turns[0].output.feedback.value,'up');assert.deepEqual(record.turns[0].output.feedback.tags,['内容准确']);
+assert.equal(record.turns[1].input.content,'看一下本周分货结果');assert.equal(record.turns[1].output.feedback.value,'down');
+assert.deepEqual(read('observedFeedbackCounts(observedSessions[8])'),{likes:1,dislikes:1});
+assert.deepEqual(record.turns[1].output.feedback.tags,['没有帮助']);assert.equal(record.turns[1].output.feedback.reason,'需要补充经销商与 EAN 的明细');
+assert.equal(record.execution.steps.length,0,'Local chat must not invent execution requests or Token usage');assert.equal(record.execution.tokens,null);
+assert(read("onlineSessionScopes().find(s=>s.id==='sales').items.some(s=>s.name==='销售智能分货助手')"));
+let markup=read('sdMessages()');assert.equal((markup.match(/data-message-feedback=/g)||[]).length,2);
+assert(markup.includes('点赞'));assert(markup.includes('点踩'));assert(markup.includes('需要补充经销商与 EAN 的明细'));
+assert(!read("sdMessageCard(sdCurrent().record.turns[1].input,'input',sdCurrent().record.turns[1])").includes('用户反馈'));
+assert(!read('observedDetailPage()').includes("sdCopy('session')"));assert(read('observedDetailPage()').includes('复制会话编号'));
+assert(read('sdTrace()').includes('未采集执行 Trace'));
+run("state.observedDetail.format='json'");assert(read('sdMessages()').includes('需要补充经销商与 EAN 的明细'));
+assert.deepEqual(read("sessionPayload(observedSessions[8],'io').messages"),record.messages);
+// Drafts and cancellation must never replace the submitted feedback.
+old(`acFeedbackOpen('${reply}','up');acFeedbackToggle('${reply}',1);acFeedbackCancel('${reply}')`);
+run('syncAssetObservedSessions()');assert.equal(read('sdCurrent().record.turns[1].output.feedback.value'),'down');
+// Modification and retraction update the exact message, without adding another session.
+old(`acFeedbackOpen('${reply}','up');acFeedbackToggle('${reply}',1);acMessage('${reply}').feedbackDraft.reason='<img src=x onerror=alert(1)>';acFeedbackSave('${reply}')`);
+run('syncAssetObservedSessions()');assert.equal(read('observedSessions.length'),9);assert.equal(read('sdCurrent().record.turns[1].output.feedback.value'),'up');
+assert.deepEqual(read('observedFeedbackCounts(observedSessions[8])'),{likes:2,dislikes:0});
+markup=read('sdMessages()');assert(markup.includes('&lt;img'));assert(!markup.includes('<img'));assert(markup.includes('易于理解'));
+old(`acFeedbackRemove('${reply}')`);run('syncAssetObservedSessions()');assert.equal(read('sdCurrent().record.turns[1].output.feedback'),null);
+assert.deepEqual(read('observedFeedbackCounts(observedSessions[8])'),{likes:1,dislikes:0});
+assert.equal((read('sdMessages()').match(/data-message-feedback=/g)||[]).length,1);
+assert.equal(clone(load().ctx,'observedSessions.length'),9,'Refresh reads the committed local snapshot');
+// Existing samples demonstrate both feedback directions; no-feedback replies stay clean.
+run("state.observedDetail={index:0,turn:0,format:'readable'}");assert(read('sdMessages()').includes('信息虚假'));assert(read('sdMessages()').includes('规则版本和来源位置列得很清楚'));
+assert.equal(read('sdFeedback(sdCurrent().record.turns[2].output)'), '');
+run("state.page='成本分析'");assert.doesNotThrow(()=>listeners.storage({key}));
+old("useAssetAgent('procurement')");node('asset-chat-dialog').dataset.agent='procurement';node('asset-chat-input').value='查看交付风险';old('sendAssetMessage();stopAssetReply()');
+const stopped=old('acSession().messages.at(-1).id');
+old(`acFeedbackOpen('${stopped}','down');acFeedbackToggle('${stopped}',2);acFeedbackSave('${stopped}')`);
+run('syncAssetObservedSessions()');assert.equal(read('observedSessions.length'),10);
+assert(read("onlineSessionScopes().find(s=>s.id==='procurement').items.some(s=>s.name==='采购协同助手')"));
+const partial=read('observedSessions[9].assetRecord.turns[1].output');assert.equal(partial.status,'stopped');assert.equal(partial.content,old('acPlainBlocks(acSession().messages.at(-1).blocks,acSession().messages.at(-1).progress)'));
+assert(partial.content.length<old('acPlainBlocks(acSession().messages.at(-1).blocks).length'),'Stopped snapshots must not expose ungenerated reply content');
+assert.equal(partial.feedback.value,'down');
+stored.set(key,'not JSON');assert.doesNotThrow(()=>run('syncAssetObservedSessions()'));assert.equal(read('observedSessions.length'),10);
+const before=stored.get(key);localStorage.setItem=()=>{throw new Error('quota')};assert.equal(old('acPublishSession(acSession())'),false);assert.equal(stored.get(key),before);
+console.log('Passed: per-output feedback in readable/JSON views; like/dislike tags/reasons; opening reply fidelity; committed-only cross-page snapshots; edit/retract/refresh; stable session IDs; source scope; escaping/storage failures; copy-session button removed; local Trace/Token absence preserved.');

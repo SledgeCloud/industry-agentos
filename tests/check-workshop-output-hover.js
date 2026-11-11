@@ -1,0 +1,35 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const handlers=new Map(),timers=new Map(),panels=[];let serial=0;
+const escape=value=>String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const decode=value=>value.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+const register=(type,fn)=>{if(!handlers.has(type))handlers.set(type,[]);handlers.get(type).push(fn);};
+const makePanel=()=>({style:{},attributes:{},innerHTML:'',removed:false,setAttribute(key,value){this.attributes[key]=value;},remove(){this.removed=true;},contains(target){return target===this||target?.insideTooltip;},getBoundingClientRect(){return {height:300,width:520};}});
+const context={console,JSON,Map,Set,esc:escape,innerWidth:1000,innerHeight:800,
+ setTimeout(fn){const id=++serial;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},addEventListener:register,
+ document:{addEventListener:register,createElement:makePanel,body:{appendChild(panel){panels.push(panel);}}}};
+context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync('dist/workshop-evaluation-experiments.js','utf8'),context);
+const run=source=>vm.runInContext(source,context),emit=(type,event)=>{for(const fn of handlers.get(type)||[])fn(event);},flush=()=>{for(const [id,fn] of [...timers]){timers.delete(id);fn();}};
+const output='First line\n<script>alert("unsafe")</script>\n'+('long output '.repeat(100))+'LAST OUTPUT LINE';
+context.result={id:'RESULT-A1',attempt:1,status:'通过',actual:output};
+const markup=run('evExperimentOutputPreview(result)');
+assert(markup.includes('tabindex="0"')&&markup.includes('onfocus='),'complete output can be opened with keyboard focus');
+assert(!markup.includes('<script>'),'untrusted Agent output cannot become markup');
+const data=decode(markup.match(/data-ev-output="([^"]*)"/)[1]);assert.equal(JSON.parse(data)[0].text,output,'preview retains every character of the full output');
+const anchor={isConnected:true,attributes:{'data-ev-output':data},getAttribute(key){return this.attributes[key]??null;},setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];},getBoundingClientRect(){return {left:920,top:700,bottom:724};}};context.anchor=anchor;
+run('evExperimentShowOutput(anchor)');let panel=panels.at(-1);
+assert.equal(panel.attributes.role,'tooltip');assert.equal(anchor.attributes['aria-describedby'],'ev-experiment-output-tooltip');
+assert(panel.innerHTML.includes('LAST OUTPUT LINE')&&panel.innerHTML.includes('&lt;script&gt;'),'the floating preview is complete and escaped');
+assert.equal(panel.style.left,'464px');assert.equal(panel.style.top,'392px','preview stays in the viewport near lower-right table cells');
+assert.equal(panels.length,1,'preview lives in document.body, outside the clipped table');
+run('evExperimentHideOutput()');panel.onmouseenter();flush();assert(!panel.removed,'pointer can enter and scroll the tooltip after leaving the cell');
+emit('scroll',{target:{insideTooltip:true}});assert(!panel.removed,'scrolling long output keeps its preview open');
+emit('scroll',{target:{}});assert(panel.removed,'table/page scrolling dismisses the old positioned preview');
+assert(!('aria-describedby' in anchor.attributes));
+run('evExperimentShowOutput(anchor)');panel=panels.at(-1);emit('keydown',{key:'Escape'});assert(panel.removed,'Escape closes a focused preview');
+run('evExperimentShowOutput(anchor)');panel=panels.at(-1);emit('resize',{});assert(panel.removed,'resize removes stale viewport positioning');
+run('evExperimentShowOutput(anchor)');panel=panels.at(-1);panel.onmouseleave();flush();assert(panel.removed,'leaving the preview dismisses it');
+context.other={id:'RESULT-A2',attempt:2,status:'未通过',actual:'Second independent output'};
+const grouped=run('evExperimentOutputPreview([result,other])'),groupData=decode(grouped.match(/data-ev-output="([^"]*)"/)[1]);anchor.attributes['data-ev-output']=groupData;
+run('evExperimentShowOutput(anchor)');panel=panels.at(-1);assert(panel.innerHTML.includes('第 1 次执行')&&panel.innerHTML.includes('第 2 次执行')&&panel.innerHTML.includes('Second independent output'),'collapsed repeated cases retain separate complete execution outputs');
+run('evExperimentCloseOutput()');assert(panel.removed,'view/table replacement has an explicit immediate cleanup hook');
+console.log('PASS full actual-output hover, grouped attempts, escaped content, unclipped placement and accessible dismissal');

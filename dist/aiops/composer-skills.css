@@ -1,0 +1,27 @@
+/* Shared Workplace palette with AIOps placement and inline skill tokens. */
+body.aiops-body:has(.cui-composer) { min-width: 0; }
+.cui-slash-menu {
+  --bg: var(--popover-bg, #fff);
+  --ink-soft: var(--text-secondary);
+  --mute: var(--text-secondary);
+  --border-soft: var(--border);
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 130;
+}
+.cui-input[contenteditable] { white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; }
+.cui-input[contenteditable]:empty::before { content: attr(data-placeholder); color: var(--placeholder); pointer-events: none; }
+.cui-inline-skill {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  gap: 4px;
+  padding: 0;
+  color: var(--primary-color, var(--brand-blue));
+  white-space: nowrap;
+  vertical-align: top;
+  user-select: all;
+}
+.cui-inline-skill > svg { display: block; width: 16px; height: 16px; flex: 0 0 16px; color: inherit; }
+.cui-inline-skill > span { line-height: 20px; }

@@ -1,0 +1,33 @@
+# Keep this repository focused on the runnable demo and its verification.
+/*
+!/.gitignore
+!/.vercelignore
+!/README.md
+!/vercel.json
+!/dist/
+!/tests/
+!/docs/
+
+# dist is the source of this buildless application; it must be committed.
+/dist/*
+!/dist/*.html
+!/dist/*.css
+!/dist/*.js
+!/dist/aiops/
+/tests/*
+!/tests/check-*.js
+/docs/*
+!/docs/DEPLOYMENT.md
+
+# Never commit local credentials, machine state, or generated artifacts.
+**/.DS_Store
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/node_modules/
+**/.vercel/
+**/coverage/
+**/*.log
+**/*.bak
+**/*~

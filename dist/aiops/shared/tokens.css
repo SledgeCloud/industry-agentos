@@ -1,0 +1,117 @@
+@import url("segmented-tabs.css?v=20261027context2");
+
+/* tokens.css — :root design tokens, base reset, body */
+
+:root {
+  --text: #333333;
+  --text-secondary: #8c8c8c;
+  --placeholder: #b3b3b3;
+  --divider: #e6e6e6;
+  --hover: #f5f5f5;
+  --selected: #e5f4ff;
+  --search-bg: #f5f5f5;
+  --brand-red: #f24822;
+  --file-blue: #0d99ff;
+
+  /* Locked popover chrome — account menu is the source of truth */
+  --popover-bg: #ffffff;
+  --popover-border: #ececec;
+  --popover-radius: 14px;
+  --popover-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --popover-sep: #f0f0f0;
+  --popover-font: 13px;
+  --popover-pad: 6px;
+  --popover-item-h: 34px;
+  --popover-item-radius: 8px;
+  --popover-item-pad-x: 10px;
+  --popover-gap: 8px;
+
+  /* LOCKED 2026-10-10 · File tree (Cursor density, light surface) */
+  --ft-row-h: 22px;
+  --ft-font: 13px;
+  --ft-indent: 12px;
+  --ft-pad-x: 8px;
+  --ft-chev-w: 16px;
+  --ft-ico-size: 16px;
+  --ft-gap: 4px;
+  --ft-radius: 0;
+  --ft-fg: #333333;
+  --ft-fg-root: #111111;
+  --ft-hover: var(--hover);
+  --ft-selected: var(--selected);
+  --ft-chev: #8c8c8c;
+  --ft-js-bg: #f7df1e;
+  --ft-js-fg: #323330;
+  --ft-ts-bg: #3178c6;
+  --ft-ts-fg: #ffffff;
+  --ft-html-bg: #e44d26;
+  --ft-html-fg: #ffffff;
+  --ft-py-bg: #3776ab;
+  --ft-py-fg: #ffffff;
+  --ft-md-bg: #0d99ff;
+  --ft-md-fg: #ffffff;
+  --ft-readme-bg: #0d99ff;
+  --ft-readme-fg: #ffffff;
+  --ft-csv-bg: #39b7bc;
+  --ft-csv-fg: #ffffff;
+  --ft-css-bg: #264de4;
+  --ft-css-fg: #ffffff;
+  --ft-json-bg: #cbcb41;
+  --ft-json-fg: #333333;
+  --ft-file-fg: #8c8c8c;
+
+  /* Page title — matches `.main-title` / agentos-ui type scale */
+  --title-page-size: 22px;
+  --title-page-lh: 28px;
+
+  /* LOCKED 2026-10-10 · Agent turn chrome (AgentOS) */
+  --text-primary: #111111;
+  --ao-avatar-size: 28px;
+  --ao-avatar-bg: #171717;
+  --ao-avatar-fg: #ffffff;
+  --ao-name-size: 14px;
+  --ao-name-weight: 600;
+  --ao-tool-bg: #f5f5f5;
+  --ao-tool-radius: 8px;
+  --ao-code-pill-bg: #f0f0f0;
+  --ao-code-pill-radius: 4px;
+  --ao-table-border: #ececec;
+  --ao-table-head: #8c8c8c;
+  --ao-prose-size: 13px;
+  --ao-prose-lh: 1.65;
+  --ao-prose-color: #303030;
+  --ao-h-size: 13px;
+  --ao-foot-color: var(--text-secondary);
+
+  /* LOCKED · Deep thinking — crawled from https://agentos-cui-demo.vercel.app/ */
+  --ao-dt-text: rgba(0, 0, 0, 0.88);
+  --ao-dt-label: rgba(0, 0, 0, 0.65);
+  --ao-dt-desc: rgba(0, 0, 0, 0.45);
+  --ao-dt-fill: rgba(0, 0, 0, 0.03);
+  --ao-dt-border: #f0f0f0;
+  --ao-dt-split: rgba(0, 0, 0, 0.12);
+  --ao-dt-radius: 8px;
+  --ao-dt-font: 13px;
+  --ao-dt-lh: 18px;
+  --ao-dt-copy-lh: 24px;
+  --ao-dt-details-max: 120px;
+  --ao-dt-viewport-max: 480px;
+  --ao-dt-row-min: 18px;
+  --ao-dt-status-min: 28px;
+  --ao-dt-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ao-dt-collapse-ms: 0.32s;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  display: flex;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
+svg { display: block; flex-shrink: 0; }

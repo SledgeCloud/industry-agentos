@@ -1,0 +1,9 @@
+# CLI uploads need only the deploy configuration and static application.
+/*
+!/vercel.json
+!/dist/
+/dist/*
+!/dist/*.html
+!/dist/*.css
+!/dist/*.js
+!/dist/aiops/

@@ -1,0 +1,7 @@
+/* Only the preserved modules and administration host extend the reference styles. */
+.aiops-extension-frame{position:fixed;z-index:20;border:0;background:#fff;display:block}
+.aiops-extension-frame[hidden]{display:none}
+.aiops-scroll.is-extension-page{padding:0;overflow:hidden}
+.extension-loading{padding:32px;color:#8c8c8c;font-size:13px}
+.aiops-administration{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff;z-index:1100}
+.acct-ico>svg{width:16px;height:16px}

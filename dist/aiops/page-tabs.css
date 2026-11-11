@@ -1,0 +1,59 @@
+/* Open module tabs share the main shell, independently of resource detail tabs. */
+.aiops-app.has-page-tabs { grid-template-rows: 42px minmax(0,1fr); }
+.aiops-app.has-page-tabs > .aiops-side { grid-column: 1; grid-row: 1 / span 2; }
+.aiops-app.has-page-tabs > #pageRoot { grid-column: 2; grid-row: 2; min-height: 0; }
+.aiops-app.has-page-tabs > .cui-rail { grid-column: 3; grid-row: 1 / span 2; }
+.aiops-app.has-page-tabs.is-rail-max > .cui-rail { grid-column: 2; }
+.aiops-app.has-page-tabs.is-rail-max > .aiops-page-tabs { display: none; }
+.aiops-page-tabs {
+  display: flex; position: relative; grid-column: 2; grid-row: 1; align-items: stretch;
+  min-width: 0; min-height: 0; height: 42px; margin: 0; padding: 0;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  border-bottom: 1px solid var(--divider, #e6e6e6); background: #fafafa;
+  color: var(--text-secondary, #8c8c8c); font: 12px/20px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  scrollbar-width: none;
+}
+.aiops-page-tabs::-webkit-scrollbar { display: none; }
+.aiops-page-tabs, .aiops-page-tabs * { box-sizing: border-box; }
+.aiops-page-tabs[hidden], .aiops-page-tabs [hidden] { display: none !important; }
+.aiops-page-tab-wrap {
+  display: flex; position: relative; align-items: center; flex: 0 0 auto; gap: 2px;
+  min-width: 112px; max-width: 220px; height: 41px; padding: 0 7px 0 0;
+  border: 0; border-right: 1px solid #eaeaea; border-bottom: 2px solid transparent;
+  background: transparent; color: #8c8c8c;
+}
+.aiops-page-tab-wrap:hover { background: #f4f4f4; color: #555; }
+.aiops-page-tab-wrap.is-active,
+.aiops-page-tab-wrap:has(> [role=tab][aria-selected=true]) {
+  border-bottom-color: #171717; background: #fff; color: #222;
+}
+.aiops-page-tabs [role=tab] {
+  display: inline-flex; align-items: center; justify-content: flex-start; flex: 1 1 auto; gap: 7px;
+  min-width: 0; height: 100%; margin: 0; padding: 0 6px 0 14px;
+  overflow: hidden; border: 0; border-radius: 0; background: transparent;
+  color: inherit; font: inherit; font-weight: 400; line-height: 20px; text-align: left; white-space: nowrap;
+  text-overflow: ellipsis; cursor: pointer;
+}
+.aiops-page-tabs [role=tab][aria-selected=true] { color: #222; font-weight: 500; }
+.aiops-page-tabs [role=tab] > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aiops-page-tabs [role=tab] > :is(svg,i) { display: block; flex: 0 0 14px; width: 14px; height: 14px; color: #999; }
+.aiops-page-tabs [role=tab][aria-selected=true] > :is(svg,i) { color: #666; }
+.aiops-page-tabs [data-page-tab-close] {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px;
+  width: 20px; height: 20px; margin: 0; padding: 0; opacity: 0;
+  border: 0; border-radius: 5px; background: transparent; color: #999;
+  font: inherit; font-size: 16px; line-height: 20px; cursor: pointer;
+}
+.aiops-page-tabs [data-page-tab-close] :is(svg,i) { display: block; width: 12px; height: 12px; }
+.aiops-page-tab-wrap:is(:hover,:focus-within,.is-active) > [data-page-tab-close],
+.aiops-page-tab-wrap:has(> [role=tab][aria-selected=true]) > [data-page-tab-close] { opacity: 1; }
+.aiops-page-tabs [data-page-tab-close]:hover { background: #eaeaea; color: #444; }
+.aiops-page-tabs [role=tab]:focus-visible { outline: 2px solid #999; outline-offset: -4px; border-radius: 5px; }
+.aiops-page-tabs [data-page-tab-close]:focus-visible { opacity: 1; outline: 2px solid #999; outline-offset: 1px; }
+@media (hover: none) { .aiops-page-tabs [data-page-tab-close] { opacity: 1; } }
+@media (max-width: 760px) {
+  .aiops-app.has-page-tabs > :is(#pageRoot,.aiops-page-tabs) { grid-column: 1; }
+  .aiops-app.has-page-tabs.is-rail-max > .aiops-page-tabs { display: flex; }
+  .aiops-page-tab-wrap { min-width: 104px; max-width: 190px; }
+  .aiops-page-tabs [role=tab] { gap: 6px; padding-left: 12px; }
+}

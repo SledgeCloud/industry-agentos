@@ -1,0 +1,30 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('dist/index.html','utf8'),nodes={};
+const sandbox={document:{getElementById:id=>nodes[id]||(nodes[id]={innerHTML:'',textContent:''}),querySelector:()=>({classList:{add(){}}}),querySelectorAll:()=>[],addEventListener(){}},setTimeout(){},clearTimeout(){},console,FormData:class {constructor(form){this.values=form.values}get(key){return this.values[key]}getAll(key){return this.values[key]||[]}}};
+vm.createContext(sandbox);vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],sandbox);const run=s=>vm.runInContext(s,sandbox);
+run("studio.scene='sales';openWorkshopTests();wtTab('评估器')");
+assert(run("wtScreen().includes('>评估器</button>')"));
+assert.equal(run('wtEvaluatorsLibrary.length'),6);
+assert(run("wtEvaluatorsLibrary.some(e=>e.type==='Code') && wtEvaluatorsLibrary.some(e=>e.type==='LLM')"));
+run('wtEditEvaluator()');
+let markup=nodes.overlay.innerHTML;assert(markup.includes('创建评估器'));assert(markup.includes('<textarea id="wt-evaluator-prompt"'));assert(markup.includes('20000'));assert(!markup.includes('被引用的参数'));assert(markup.includes('评分范围'));assert(markup.includes('通过阈值'));assert(markup.includes('大于等于该阈值为 Pass'));
+for(const label of ['AI优化','复制','清空','选择预置评估器'])assert(!markup.includes(label));
+const makeForm=(name,description,type,prompt,scoreMin='0',scoreMax='5',passThreshold='3')=>({elements:{name:{value:name},description:{value:description},type:{value:type},prompt:{value:prompt},scoreMin:{value:scoreMin},scoreMax:{value:scoreMax},passThreshold:{value:passThreshold}}});
+sandbox.form=makeForm('   ','说明','LLM','提示词');assert.equal(run('wtSaveEvaluator(form)'),false);assert.equal(run('wtEvaluatorsLibrary.length'),6);
+sandbox.form=makeForm('预期输出命中','说明','LLM','提示词');assert.equal(run('wtSaveEvaluator(form)'),false);
+for(const [min,max,threshold] of [['5','1','3'],['0','5','6'],['0','5',''],['0','','3'],['x','5','3'],['0','5','NaN']]){
+ sandbox.form=makeForm('非法评分配置','说明','LLM','提示词',min,max,threshold);assert.equal(run('wtSaveEvaluator(form)'),false);assert.equal(run('wtEvaluatorsLibrary.length'),6);
+}
+sandbox.form=makeForm('自定义字段检查','检查必填字段','Code','return {"score": 1, "reason": "完整"}');assert.equal(run('wtSaveEvaluator(form)'),true);
+assert.equal(run('wtEvaluatorsLibrary.length'),7);assert.equal(run("wtEvaluatorsLibrary[6].type"),'Code');assert.equal(run('wtState.tab'),'评估器');
+run("wtEditEvaluator('EV-001')");assert(nodes.overlay.innerHTML.includes('readonly'));assert.equal(run("wtSaveEvaluator(form,'EV-001')"),false);
+run("wtEditStrategy('', 'EV-007')");assert(/value="EV-007" checked/.test(nodes.overlay.innerHTML));
+sandbox.strategyForm={values:{name:'字段完整性策略',model:'deepseek-v4-flash',metric:['业务输出质量'],evaluator:['EV-007']}};
+run('wtSaveStrategy(strategyForm)');assert.equal(run('wtData().strategies.at(-1).evaluators[0]'),'EV-007');
+run("var customTask=wtCreateTask({suite:wtData().suites[0].id,strategy:wtData().strategies.at(-1).id,concurrency:2})");assert.equal(run('customTask.evaluators[0].name'),'自定义字段检查');assert.equal(run('customTask.evaluators[0].scoreMin'),0);assert.equal(run('customTask.evaluators[0].scoreMax'),5);assert.equal(run('customTask.evaluators[0].passThreshold'),3);
+sandbox.form=makeForm('更新后的字段检查','检查所有字段','LLM','更新后的提示词','1','10','7');assert.equal(run("wtSaveEvaluator(form,'EV-007')"),true);
+assert.equal(run('customTask.evaluators[0].name'),'自定义字段检查');assert.equal(run('customTask.evaluators[0].type'),'Code');assert.equal(run('customTask.evaluators[0].passThreshold'),3);assert.equal(run('wtEvaluatorsLibrary[6].passThreshold'),7);run("wtEditEvaluator('EV-007')");assert(nodes.overlay.innerHTML.includes('value=\"7\"'));sandbox.form=makeForm('更新后的字段检查','检查所有字段','LLM','提示词','','','3');assert.equal(run("wtSaveEvaluator(form,'EV-007')"),true);assert.equal(run('wtEvaluatorsLibrary[6].scoreMin'),null);
+run("studio.scene='procurement';wtData();wtState.suite=null;wtTab('评估器')");assert(run("wtScreen().includes('更新后的字段检查')"));
+run("wtEditStrategy('', 'EV-007')");assert(nodes.overlay.innerHTML.includes('更新后的字段检查'));
+for(const m of nodes.overlay.innerHTML.matchAll(/(?:onclick|onchange|onsubmit|oninput)="([^"]*)"/g))new Function(m[1].replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&'));
+console.log('Passed: evaluator tab, builtin LLM/Code library, editor, required fields, duplicate validation, builtin protection, create/edit, strategy selection, task configuration snapshot, score range/threshold validation and cross-scene reuse.');

@@ -1,0 +1,13 @@
+[data-enterprise-profile]{display:inline-flex;position:relative;align-items:center;flex-shrink:0}
+.ep-administration{position:fixed;inset:0;width:100%;height:100%;border:0;background:#f6f7f9;z-index:1100;color-scheme:light}
+.ep-trigger{display:inline-flex!important;align-items:center;gap:8px!important;border:0!important;background:transparent!important;color:#364152!important;padding:4px 6px!important;border-radius:7px!important;font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif!important;cursor:pointer;white-space:nowrap}
+.ep-trigger:hover,.ep-trigger[aria-expanded=true]{background:#eef3fa!important}
+.ep-avatar{display:inline-grid;place-items:center;flex-shrink:0;width:30px;height:30px;background:#2782ee;border-radius:50%;color:white;font-size:14px}
+.ep-chevron{width:12px;height:12px;fill:none;stroke:#8593a6;stroke-width:1.5;margin-left:3px}
+.ep-menu{position:fixed;z-index:1000;width:218px;background:#fff;border:1px solid #e5eaf1;border-radius:10px;padding:7px;box-shadow:0 8px 32px #23375324;color:#364152;font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+.ep-identity{display:flex;align-items:center;gap:10px;padding:10px 9px 13px;margin-bottom:5px;border-bottom:1px solid #edf0f5}
+.ep-identity small{display:block;color:#94a2b5;font-size:12px}
+.ep-menu a{display:flex;align-items:center;gap:11px;padding:11px 10px;border-radius:6px;text-decoration:none;color:#364152}
+.ep-menu a:hover,.ep-menu a:focus{background:#edf5ff;color:#2782ee;outline:none}
+.ep-menu a svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6}
+.ep-trigger:focus-visible{outline:2px solid #2782ee;outline-offset:2px}

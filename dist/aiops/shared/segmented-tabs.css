@@ -1,0 +1,52 @@
+/* Shared black sliding tabs, based on Workbench's selected resource chip. */
+body .wb-segmented-tabs {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 32px;
+  height: auto;
+  box-sizing: border-box;
+  padding: 3px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #f5f5f5 !important;
+}
+body .wb-segmented-tabs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: var(--wb-tab-top, 3px);
+  left: 0;
+  width: var(--wb-tab-width, 0px);
+  height: var(--wb-tab-height, 26px);
+  transform: translateX(var(--wb-tab-left, 3px));
+  border-radius: 6px;
+  background: #111;
+  transition: transform .18s ease, width .18s ease, top .18s ease;
+}
+body .wb-segmented-tabs > button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 26px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent !important;
+  color: #8c8c8c;
+  box-shadow: none !important;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 20px;
+}
+body .wb-segmented-tabs > button::before { display: none !important; }
+body .wb-segmented-tabs > button:is(.selected,.is-active,.is-on,.on,.is-current,.is-cur,[aria-selected="true"],[aria-pressed="true"]) { color: #fff !important; font-weight: 500 !important; }
+body .wb-segmented-tabs > button:focus-visible { outline: 2px solid var(--file-blue, #1f82eb); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { body .wb-segmented-tabs::before { transition: none; } }
+
+body .wb-segmented-tabs[hidden] { display: none !important; }

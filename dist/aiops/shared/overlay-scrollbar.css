@@ -1,0 +1,59 @@
+/* Overlay scrollbar — no layout gutter; rail painted by overlay-scrollbar.js */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+}
+
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.ao-osb-rail {
+  position: fixed;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  width: 4px;
+}
+
+.ao-osb-rail.is-x {
+  width: auto;
+  height: 4px;
+}
+
+.ao-osb-rail.is-visible {
+  opacity: 1;
+}
+
+.ao-osb-thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  min-height: 24px;
+  border-radius: 999px;
+  background: #d9d9d9;
+  pointer-events: none;
+}
+
+.ao-osb-rail.is-x .ao-osb-thumb {
+  width: auto;
+  height: 100%;
+  min-height: 0;
+  min-width: 24px;
+}

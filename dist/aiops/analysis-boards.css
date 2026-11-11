@@ -1,0 +1,1853 @@
+/* Ported from AIOps-Enhance dist/new-aiops.html — cost / health / behavior dashboards */
+
+.heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:20px;gap:8px}
+
+.segments{display:flex;background:#f0f3f8;border-radius:7px;padding:3px;gap:2px}
+
+.segments button{padding:5px 10px;border:0;background:transparent;font-size:12px}
+
+.segments .selected{color:var(--blue);background:white;box-shadow:0 1px 4px #dbe2eb}
+
+.panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:19px;margin-bottom:16px}
+
+.panelhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+
+.modal{background:white;width:650px;max-height:90vh;overflow:auto;border-radius:14px;box-shadow:0 25px 90px #14253c40}
+
+.modalheader{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line)}
+
+.modalbody{padding:20px 24px}
+
+.modalfooter{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+
+.note{font-size:11px;color:var(--muted);line-height:1.7}
+
+@media(max-width:850px){body{min-width:820px}.shell{grid-template-columns:190px minmax(350px,1fr) 280px}.top{padding:0 14px}.toolbar{flex-wrap:wrap}}
+
+.icon{display:inline-block;vertical-align:middle;flex:none}
+
+.navitem .icon{color:#57595e;width:15px;height:15px}
+
+.folderlabel .icon{color:#66696e;width:15px}
+
+.heading{margin-bottom:22px;align-items:flex-start;gap:8px}
+
+.heading small{font-size:11px;line-height:1.7;color:#96989d}
+
+.heading .ai-action{font-size:11px;color:#737780;border-color:#e6e7eb;margin-top:1px;white-space:nowrap;flex:none}
+
+.toolbar{border:0;margin-bottom:18px;padding:0;gap:8px}
+
+.toolbar>.row{gap:7px}
+
+.segments{padding:2px;background:#f3f3f4;border-radius:5px;gap:1px}
+
+.segments button{font-size:10px;padding:4px 7px;border-radius:4px;white-space:nowrap;color:#888b91}
+
+.segments .selected{background:#fff;color:var(--blue);box-shadow:0 1px 4px #dbe2eb}
+
+.panel{border-radius:7px;padding:16px;margin-bottom:14px;border-color:#e4e6e9;box-shadow:none}
+
+.panelhead{margin-bottom:15px;gap:8px}
+
+.panelhead small{font-size:10px}
+
+.modal{border-radius:12px;box-shadow:0 20px 80px #222b3830}
+
+.modalheader{padding:20px 24px}
+
+.modalheader h2{font-size:15px}
+
+.suggestion .icon{color:#adb0b6;width:12px}
+
+.note{font-size:11px;color:#969ba4;line-height:1.9}
+
+.cost-overview{display:grid;grid-template-columns:1.05fr 1fr;gap:12px;margin-bottom:12px}
+
+.compact-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+
+.compact-stat{border:1px solid #e4e6e9;border-radius:6px;text-align:center;padding:12px 3px;display:flex;flex-direction:column;gap:5px;justify-content:center}
+
+.compact-stat>span{font-size:10px;color:#81858c}
+
+.compact-stat strong{font-size:19px;font-weight:600;letter-spacing:-.4px;color:#292d33}
+
+.compact-stat small{font-size:9px;color:#a3a6ac;white-space:nowrap}
+
+.usage-panel .panelhead{margin-bottom:3px}
+
+.cost-distributions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+
+.distribution .panelhead{margin-bottom:20px}
+
+.distribution .panelhead small{font-size:9px}
+
+.cost-exploration{display:grid;grid-template-columns:184px minmax(0,1fr);gap:14px;margin-top:4px}
+
+.activity-panel .panelhead{margin-bottom:12px}
+
+.cost-session-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+.cost-session-card{border:1px solid #e1e4e9;border-radius:7px;padding:13px 11px;cursor:pointer;transition:border-color .15s}
+
+.cost-session-card:hover{border-color:#a6b6cf}
+
+.cost-session-card p{font-size:8px;color:#aaaeb5;border-top:1px solid #f0f1f3;padding-top:9px;margin:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+.cost-session-card p span{color:#8d939d;margin-left:4px}
+
+@media(min-width:1600px){.shell{grid-template-columns:256px minmax(600px,1fr) 390px}main{padding:26px 34px 45px}.compact-stat{padding:15px 5px}.compact-stat strong{font-size:23px}.usage-chart{height:165px}.distribution{padding:18px}.ring{width:96px;height:96px}.ring b{font-size:16px}.distribution-items{gap:14px 20px}.distribution-items span,.distribution-items b,.distribution-items small{font-size:11px}.cost-exploration{grid-template-columns:220px minmax(0,1fr)}.cost-session-card{padding:16px}.card-top h3{font-size:13px}.sessioncard-metrics dt{font-size:10px}.sessioncard-metrics dd{font-size:11px}.mini-ring{width:65px;height:65px}.mini-ring b{font-size:12px}.sessiontag{font-size:9px}.cost-session-card p{font-size:9px}.heatcells button{min-height:15px}.skillrow>span{font-size:11px}.chathead{padding:20px 24px 15px}.messages{padding:35px 26px}.welcome h2{font-size:19px}.suggestion{font-size:12px}.composerwrap{padding:14px 21px 18px}.composer textarea{font-size:13px}}
+
+@media(max-width:1250px){.shell{grid-template-columns:216px minmax(450px,1fr) 306px}main{padding:22px 18px}.folder-actions button{padding:2px}.folderlabel{gap:7px}.fullchat .shell{grid-template-columns:216px 1fr}.datebutton{display:none}.compact-stat strong{font-size:17px}.compact-stat small{font-size:8px}.cost-overview{grid-template-columns:1fr}.usage-chart{height:160px}.cost-distributions{grid-template-columns:1fr}.distribution-items{grid-template-columns:repeat(3,minmax(0,1fr))}.cost-exploration{grid-template-columns:1fr}.cost-exploration>div:first-child{display:grid;grid-template-columns:1fr 1fr;gap:12px}.activity-panel,.skills-panel{margin-bottom:8px}.heatcells button{min-height:8px}.welcome h2{font-size:15px}.welcome p{font-size:11px}.suggestion{font-size:10px}.messages{padding:25px 20px}.cost-session-card{padding:12px}.composer .row small{font-size:9px}.chathead{padding:17px}.insight-heading>span{font-size:9px}}
+
+@media(max-width:850px){body{min-width:820px}.shell{grid-template-columns:190px minmax(350px,1fr) 280px}.cost-session-grid{grid-template-columns:1fr}.cost-exploration>div:first-child{display:block}.cost-distributions .distribution-items{grid-template-columns:repeat(2,minmax(0,1fr))}.fullchat .shell{grid-template-columns:190px 1fr}}
+
+/* Legible secondary type at standard laptop widths. */
+.compact-stat>span{font-size:11px;color:#747a83}
+
+.compact-stat small{font-size:10px;color:#949ba5}
+
+.compact-stat strong{font-size:22px}
+
+.distribution .panelhead small{font-size:10px}
+
+.cost-session-card p{font-size:9px}
+
+.cost-session-card{padding:14px 12px}
+
+.heading small{font-size:12px}
+
+.agent-select,.datebutton,.segments button{font-size:11px}
+
+@media(min-width:1600px){.distribution-items span,.distribution-items b,.distribution-items small{font-size:11px}.compact-stat strong{font-size:24px}.ring{width:96px;height:96px}.cost-session-card{padding:17px}.mini-ring{width:64px;height:64px}.card-top h3{font-size:13px}}
+
+@media(max-width:1250px){.compact-stat strong{font-size:21px}.compact-stat small{font-size:10px}.distribution-items span,.distribution-items b,.distribution-items small{font-size:11px}.sessioncard-metrics dt{font-size:9px}.sessioncard-metrics dd{font-size:10px}.suggestion{font-size:11px}.welcome p{font-size:12px}.heading small{font-size:11px}}
+
+.modal{display:flex;flex-direction:column}
+
+.modalheader,.modalfooter{flex:none}
+
+.modalbody{overflow-y:auto;min-height:0}
+
+.modalfooter{background:white}
+
+.lineage-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#e9ebef;border:1px solid #e9ebef;border-radius:7px;overflow:hidden;margin:15px 0}
+
+.lineage-field{background:white;padding:12px 14px;min-width:0}
+
+.lineage-field span{font-size:11px;color:#8c929b;display:block;margin-bottom:7px}
+
+.lineage-field b{font-size:12px;font-weight:500;overflow-wrap:anywhere}
+
+.reply-meta .icon{transform:rotate(-90deg);transition:transform .15s}
+
+.reply-meta .opened .icon{transform:rotate(0)}
+
+.message-actions .thumb-down .icon{transform:rotate(180deg)}
+
+.workshop .icon:first-child{color:#517df5}
+
+.global-item .icon{color:#59606b}
+
+.aiops-root .icon{color:#fff}
+
+.aiops-root .icon:last-child{transition:transform .15s;transform:rotate(-90deg)}
+
+.aiops-root[aria-expanded="true"] .icon:last-child{transform:rotate(0)}
+
+.session-analysis-controls{display:flex;gap:10px;align-items:center;margin:25px 0 17px;flex-wrap:wrap}
+
+.session-analysis-controls select{font-size:11px;padding:9px;max-width:155px}
+
+.toolbar{border-bottom:0;padding:0;margin:0 0 16px;min-height:34px}
+
+.updated-time{font-size:11px;color:#858990;white-space:nowrap}
+
+.toolbar-actions{margin-left:auto;gap:10px}
+
+.toolbar .segments{background:#f4f4f5}
+
+.toolbar .segments button{font-size:11px;color:#858990;padding:5px 10px}
+
+.toolbar .segments .selected{color:#2875ed;box-shadow:0 1px 3px #0000000a}
+
+.health-overview{display:grid;grid-template-columns:1.05fr 1fr;gap:12px;margin-bottom:12px}
+
+.health-trend{margin:0;padding:13px 12px 10px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+
+.health-trend .panelhead{margin-bottom:4px}
+
+.health-trend .panelhead h2{font-size:12px}
+
+.health-trend .panelhead small{font-size:9px}
+
+.health-chart{display:block;width:100%;height:146px;overflow:visible}
+
+.health-chart text{font-size:10px;fill:#999da5}
+
+.health-distributions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+
+.health-distributions .distribution{padding:15px 13px 17px}
+
+.health-distributions .distribution .panelhead{margin-bottom:20px}
+
+.health-distributions .distribution-items{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+@media(min-width:1600px){.health-chart{height:165px}.health-distributions .distribution{padding:18px}}
+
+@media(max-width:1250px){.health-overview,.health-distributions{grid-template-columns:1fr}.health-chart{height:160px}}
+
+@media(max-width:850px){.toolbar{align-items:flex-start}.toolbar-actions{width:100%;justify-content:flex-end}.updated-time{padding-top:8px}.health-distributions .distribution-items{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.inline-skill .icon,.sent-skill .icon{margin-right:4px;vertical-align:-2px;color:inherit}
+
+.command-row>.icon{color:#59616e}
+
+.command-row>.icon{grid-column:1;grid-row:1}
+
+.task-editor-modal{width:min(860px,calc(100vw - 50px))}
+
+.task-editor-modal .modalbody{padding:0 28px 25px}
+
+.artifact-tree-parent>.icon:first-child{transition:transform .15s}
+
+.artifact-tree-group.collapsed .artifact-tree-parent>.icon:first-child{transform:rotate(-90deg)}
+
+.page.is-analysis .panel h2,.page.is-analysis .panel>h3{font-size:12px;font-weight:600;color:#292d33}
+
+.page.is-analysis .panel{border-color:#e4e6e9;border-radius:7px}
+
+.page.is-analysis .panelhead small{font-size:10px;color:#a3a6ac}
+
+/* Built-in analyses share the original compact metric and panel visual system. */
+.analysis-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+
+.analysis-metrics .compact-stat{position:relative;align-items:center;text-align:center;background:#fff;border:1px solid #e4e6e9;border-radius:6px;padding:16px 12px;gap:7px;min-height:104px;min-width:0}
+
+.analysis-metrics .compact-stat .metric-label{display:flex;justify-content:center;align-items:center;gap:5px;font-size:11px;line-height:18px;font-weight:400;color:#81858c}
+
+.analysis-metrics .compact-stat strong{font-size:23px;font-weight:600;line-height:29px;letter-spacing:-.4px;color:#292d33}
+
+.analysis-metrics .compact-stat>small{font-size:10px;line-height:16px;font-weight:400;color:#a3a6ac;white-space:normal}
+
+.metric-help{position:relative;display:inline-flex;align-items:center;cursor:help;color:#b2b6be;outline:none}
+
+.metric-help>.icon{width:12px;height:12px}
+
+.metric-help:focus-visible{outline:2px solid #a8c6f7;outline-offset:3px;border-radius:50%}
+
+.metric-tooltip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);width:240px;max-width:65vw;padding:9px 12px;border-radius:6px;background:#30343b;color:#fff;font-size:11px;font-weight:400;line-height:1.7;white-space:normal;text-align:left;box-shadow:0 4px 14px #1823331a;visibility:hidden;opacity:0;pointer-events:none;z-index:50;transition:opacity .12s}
+
+.metric-tooltip:after{content:'';position:absolute;top:100%;left:50%;margin-left:-4px;border:4px solid transparent;border-top-color:#30343b;translate:calc(var(--tip-shift, 0px) * -1) 0}
+
+.metric-help:hover .metric-tooltip,.metric-help:focus .metric-tooltip{visibility:visible;opacity:1}
+
+.analysis-metrics .compact-stat:nth-child(3n) .metric-tooltip{left:auto;right:-8px;transform:none}
+
+.analysis-metrics .compact-stat:nth-child(3n) .metric-tooltip:after{left:auto;right:10px}
+
+.analysis-section{margin:0 0 24px;padding:0}
+.analysis-section:last-child{margin-bottom:0;padding-bottom:0}
+
+.analysis-section>.panelhead{margin:0 0 12px;padding:0}
+
+.analysis-section>.distribution{margin-bottom:0}
+
+.analysis-section .distribution-items{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+.cost-overview{grid-template-columns:1fr;gap:0}
+
+.cost-overview>.analysis-metrics{margin-bottom:14px}
+
+.cost-overview>.usage-panel{min-height:192px;margin-bottom:0}
+
+.cost-distributions{grid-template-columns:1fr}
+
+.cost-exploration>div:first-child{display:block}
+
+/* Cost summaries and the selectable line chart share one filtered Mock dataset. */
+.cost-dashboard .analysis-metrics{margin-bottom:20px}
+
+.cost-dashboard .compact-stat{min-height:115px}
+
+.cost-dashboard .cost-trend-panel{position:relative;border-color:#e3e9f2!important;border-radius:12px!important;padding:14px 16px;margin:0}
+
+.cost-trend-head{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;min-width:0}
+
+.cost-trend-title{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
+
+.cost-metric-picker{position:relative}
+
+.cost-metric-picker summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;font-size:13px;font-weight:600;min-height:22px;outline-offset:4px}
+
+.cost-metric-picker summary::-webkit-details-marker{display:none}
+
+.cost-metric-picker summary .icon{width:12px;height:12px;transition:transform .12s}
+
+.cost-metric-picker[open] summary .icon{transform:rotate(180deg)}
+
+.cost-metric-options{position:absolute;top:calc(100% + 7px);left:0;min-width:208px;padding:5px;background:#fff;border:1px solid #e0e3e8;border-radius:9px;box-shadow:0 3px 8px #1b253324;z-index:20}
+
+.cost-metric-options button{display:flex;justify-content:flex-start;width:100%;border:0;background:white;font-size:12px;white-space:nowrap;padding:10px 12px}
+
+.cost-metric-options button.selected{background:#eaf3ff;color:#3486ff}
+
+.cost-metric-options button:hover{background:#f2f6fc}
+
+
+.cost-trend-title .metric-tooltip{bottom:auto;top:calc(100% + 10px);left:0;transform:none;width:300px}
+
+.cost-trend-title .metric-tooltip:after{top:auto;bottom:100%;left:6px;border-top-color:transparent;border-bottom-color:#30343b}
+
+.cost-chart-scroll{overflow-x:auto}
+
+.analysis-line-panel{position:relative}
+
+/* Shared line-chart component (cost / health / behavior / home widgets). */
+.analysis-line-chart,
+.cost-trend-chart,
+.health-slow-chart,
+.behavior-chart{display:block;width:100%;min-width:0;height:300px;overflow:visible;font-family:inherit;color:#8998ae}
+
+.analysis-line-chart text,
+.cost-trend-chart text,
+.health-slow-chart text,
+.behavior-chart text{fill:#8998ae;font-size:12px;font-family:inherit}
+
+.analysis-line-point,
+.cost-chart-point,
+.health-slow-point,
+.behavior-chart-point{outline:none;cursor:crosshair}
+
+.analysis-line-focus,
+.cost-chart-focus,
+.health-slow-focus,
+.behavior-chart-focus{opacity:0;pointer-events:none}
+
+.analysis-line-point:hover .analysis-line-focus,
+.analysis-line-point:focus .analysis-line-focus,
+.cost-chart-point:hover .cost-chart-focus,
+.cost-chart-point:focus .cost-chart-focus,
+.health-slow-point:hover .health-slow-focus,
+.health-slow-point:focus .health-slow-focus,
+.behavior-chart-point:hover .behavior-chart-focus,
+.behavior-chart-point:focus .behavior-chart-focus{opacity:1}
+
+.analysis-line-tooltip,
+.cost-chart-tooltip,
+.health-trend-tooltip,
+.behavior-chart-tooltip{position:absolute;top:96px;max-width:calc(100% - 24px);min-width:230px;padding:12px 14px;border:1px solid #e4e9f0;border-radius:8px;box-shadow:0 5px 20px #263f5c16;background:#fff;font-size:11px;z-index:10;pointer-events:none}
+
+.analysis-line-tooltip[hidden],
+.cost-chart-tooltip[hidden],
+.health-trend-tooltip[hidden],
+.behavior-chart-tooltip[hidden]{display:none}
+
+.analysis-line-tooltip>b,
+.cost-chart-tooltip>b,
+.health-trend-tooltip>b,
+.behavior-chart-tooltip>b{display:block;font-size:11px;font-weight:500;color:#7f8a9b;margin-bottom:10px}
+
+.analysis-line-tooltip>div,
+.cost-chart-tooltip>div,
+.health-trend-tooltip>div,
+.behavior-chart-tooltip>div{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:7px 0}
+
+.analysis-line-tooltip span,
+.cost-chart-tooltip span,
+.health-trend-tooltip span,
+.behavior-chart-tooltip span{display:flex;align-items:center;gap:7px;color:#777f8b}
+
+.analysis-line-tooltip i,
+.cost-chart-tooltip i,
+.health-trend-tooltip i,
+.behavior-chart-tooltip i{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+.analysis-line-tooltip strong,
+.cost-chart-tooltip strong,
+.health-trend-tooltip strong,
+.behavior-chart-tooltip strong{font-size:11px;font-weight:500;font-variant-numeric:tabular-nums}
+
+.analysis-line-tooltip small,
+.health-trend-tooltip small{display:block;font-size:10px;color:#a3a9b1;margin-top:4px}
+
+.analysis-line-legend,
+.cost-trend-legend,
+.health-slow-legend,
+.behavior-legend{display:flex;justify-content:flex-end;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:11px;color:#92969e;line-height:16px;min-width:0}
+
+.analysis-line-legend span,
+.cost-trend-legend span,
+.health-slow-legend span,
+.behavior-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+.analysis-line-legend i,
+.cost-trend-legend i,
+.health-slow-legend i,
+.behavior-legend i{display:inline-block;width:12px;height:2px;border-radius:1px}
+
+.cost-chart-empty{position:absolute;top:55%;left:50%;transform:translate(-50%,-50%);background:#ffffffe6;padding:10px 15px;color:#929ba8;font-size:12px;pointer-events:none;white-space:nowrap}
+
+.cost-range-note{font-size:10px;color:#a3a6ac;margin:12px 0 0}
+
+@media(min-width:1200px){.cost-dashboard .analysis-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.cost-dashboard .compact-stat{padding:16px 8px}.cost-dashboard .compact-stat .metric-label{font-size:11px;gap:4px}.cost-dashboard .compact-stat:nth-child(3n) .metric-tooltip{left:auto;right:-8px;transform:none}.cost-dashboard .compact-stat:nth-child(3n) .metric-tooltip:after{left:auto;right:10px}}
+
+@media(max-width:1100px){.cost-trend-chart{height:280px}}
+
+.step-performance{margin:0;padding:15px 13px 17px}
+
+.step-bars{display:grid;gap:17px;padding:8px 0}
+
+.step-row{display:grid;grid-template-columns:90px minmax(0,1fr) 48px;align-items:center;gap:16px;font-size:10px;color:#636a75}
+
+.step-row>span{display:flex;align-items:center;gap:6px}
+
+.step-row>span>i{width:6px;height:6px;border-radius:1px}
+
+.step-row>b{text-align:right;font-size:10px;font-weight:550;color:#636a75}
+
+.step-track{height:5px;background:#f2f3f5;border-radius:3px;overflow:hidden}
+
+.step-track>i{display:block;height:100%;border-radius:3px}
+
+/* Health summaries, recorded alerts and latency trends use the same scope and dates. */
+.health-error-metrics .analysis-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+.health-performance-metrics .analysis-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+.health-dashboard .analysis-metrics .compact-stat{min-height:112px}
+
+.health-dashboard .analysis-section{margin-bottom:26px;padding-bottom:0}
+.health-dashboard .analysis-section:last-child{margin-bottom:0;padding-bottom:0}
+
+.health-dashboard .panelhead h2 .metric-label{display:flex;align-items:center;gap:6px}
+
+.health-error-metrics .compact-stat:nth-child(n+4) .metric-tooltip,.health-performance-metrics .compact-stat:last-child .metric-tooltip{left:auto;right:-8px;transform:none}
+
+.health-error-metrics .compact-stat:nth-child(n+4) .metric-tooltip:after,.health-performance-metrics .compact-stat:last-child .metric-tooltip:after{left:auto;right:10px}
+
+.health-alert-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.health-dashboard .health-alert-panels>.panel{display:flex;flex-direction:column;padding:18px 16px 14px;margin:0;height:354px;border-color:#e4eaf3!important;border-radius:10px!important;min-width:0;min-height:0}
+
+.health-alert-panels .panelhead{flex:none;min-height:25px;margin-bottom:12px;gap:8px}
+
+.health-alert-distribution .health-alert-plot,
+.health-alert-distribution .analysis-chart-host{flex:1 1 auto;min-height:0;height:auto!important;width:100%}
+
+.health-alert-chart{display:block;width:100%;height:100%}
+
+.health-alert-chart text{font-size:12px;fill:#929ba8}
+
+.health-live-alerts{display:flex;flex-direction:column}
+
+.health-live-alerts .panelhead{flex:none;margin-bottom:9px}
+
+.health-live-alerts .segments{padding:2px}
+
+.health-live-alerts .segments button{padding:3px 8px;font-size:11px}
+
+.health-alert-feed{flex:1;min-height:0;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#c9cdd4 transparent}
+
+.health-alert-feed::-webkit-scrollbar{width:4px}
+
+.health-alert-feed::-webkit-scrollbar-thumb{background:#c9cdd4;border-radius:4px}
+
+.health-alert-item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;width:100%;padding:8px 9px;margin:0 0 5px;text-align:left;border:1px solid #e2e4e8;border-radius:4px;background:#fafafa;line-height:1.6;min-height:55px}
+
+.health-alert-item:hover{background:#f5f8fd;border-color:#c9daf4}
+
+.health-alert-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+
+.health-alert-name{display:flex;align-items:center;gap:7px;min-width:0;font-size:11px;color:#989ca4;white-space:nowrap}
+
+.health-alert-name>b{color:#4c515a;font-weight:600;flex:none}
+
+.health-alert-name>span{overflow:hidden;text-overflow:ellipsis}
+
+.health-alert-name>span:last-child{font-size:16px;line-height:13px;flex:none}
+
+.health-alert-message{display:block;font-size:10px;color:#999ea8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.health-alert-meta{display:flex;align-items:flex-end;flex-direction:column;gap:4px;flex:none}
+
+.health-alert-meta time{color:#a1a5ad;font-size:10px;line-height:1.2}
+
+/* Workbench .ag-tag geometry, shared by the feed, widget, and detail dialog. */
+.aiops-body .health-alert-badge{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;height:22px;padding:0 8px;border:0;border-radius:var(--radius-xs,6px);font-size:11px;font-weight:500;line-height:22px;white-space:nowrap}
+
+.aiops-body .health-alert-badge.severe{color:var(--status-severe-fg,#b91c1c);background:var(--status-severe-bg,#fef2f2)}
+
+.aiops-body .health-alert-badge.warning{color:var(--status-warn-fg,#b76a00);background:var(--status-warn-bg,#fff4e5)}
+
+.health-alert-footer{color:#a2a6ae;font-size:10px;margin-top:7px;flex:none}
+
+.health-alert-empty{display:grid;place-items:center;min-height:200px;font-size:12px;color:#a1a8b2}
+
+.health-alert-detail-title{display:flex;align-items:center;gap:10px}
+
+.health-dashboard .panelhead .metric-tooltip{bottom:auto;top:calc(100% + 10px);left:0;transform:none}
+
+.health-dashboard .panelhead .metric-tooltip:after{top:auto;bottom:100%;left:6px;border-top-color:transparent;border-bottom-color:#30343b}
+
+.health-dashboard .health-slow-panel{position:relative;border-color:#e4eaf3!important;border-radius:10px!important;padding:14px 16px;margin:0}
+
+.health-slow-panel .panelhead{margin-bottom:20px}
+
+.health-trend-scroll{overflow-x:auto}
+
+.health-trend-empty{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);background:#ffffffe6;padding:9px 14px;white-space:nowrap;font-size:12px;color:#929ba8;pointer-events:none}
+
+.health-duration-panel .step-row{grid-template-columns:90px minmax(0,1fr) 90px}
+
+.health-duration-panel .step-bars{gap:21px;padding:10px 0 6px}
+
+.health-range-note{font-size:10px;color:#a3a6ac;margin:12px 0 0}
+
+@media(max-width:720px){.health-alert-panels{grid-template-columns:1fr}.health-dashboard .health-alert-panels>.panel{height:330px}}
+
+/* User behavior keeps numeric summaries separate from daily trends. */
+.behavior-dashboard .behavior-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+.behavior-dashboard .compact-stat{min-height:118px;justify-content:center}
+
+.behavior-dashboard .compact-stat>small{margin-top:0}
+
+.behavior-feedback-values{display:flex;justify-content:center;align-items:baseline;gap:9px}
+
+.behavior-feedback-values>span{display:flex;flex-direction:column;align-items:center;gap:3px}
+
+.behavior-feedback-values small{font-size:10px;color:#a3a6ac;font-weight:400;line-height:16px}
+
+.behavior-feedback-values>i{font-size:17px;line-height:29px;font-style:normal;color:#c7cbd2}
+
+.behavior-dashboard .behavior-metrics .compact-stat:nth-child(n+4) .metric-tooltip{left:auto;right:-8px;transform:none}
+
+.behavior-dashboard .behavior-metrics .compact-stat:nth-child(n+4) .metric-tooltip:after{left:auto;right:10px}
+
+.behavior-trends{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+.behavior-dashboard .behavior-trends .panel{min-width:0;margin:0;padding:14px 16px}
+
+.behavior-trends .behavior-feedback-panel{grid-column:1/-1}
+
+.behavior-trends .panelhead{margin-bottom:12px}
+
+.behavior-chart-scroll{overflow-x:auto;scrollbar-width:thin;padding:0 0 3px}
+
+.panelhead .behavior-legend,
+.panelhead .analysis-line-legend{margin-top:0;flex-shrink:0}
+
+.behavior-feedback-panel>.panelhead.cost-trend-head{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+
+.behavior-range-note{font-size:11px;color:#a3a6ac;margin:12px 0 0;line-height:1.7}
+
+@media(max-width:1100px){.behavior-dashboard .behavior-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+@media(max-width:720px){.behavior-trends{grid-template-columns:minmax(0,1fr)}}
+
+@media(min-width:1600px){.analysis-metrics .compact-stat{padding:18px 12px}.analysis-metrics .compact-stat strong{font-size:23px}}
+
+@media(max-width:850px){.analysis-metrics{gap:8px}.analysis-metrics .compact-stat{padding:13px 8px}.analysis-metrics .compact-stat strong{font-size:23px}.analysis-section .distribution-items{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.sd-crumb .icon{transform:rotate(-90deg)}
+
+.sd-trace-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+
+.sd-trace-toolbar label{font-size:11px;color:#7a818c;display:flex;align-items:center;gap:8px}
+
+.sd-trace-toolbar select{padding:7px 9px;font-size:11px;max-width:240px}
+
+.sd-trace-toolbar button{font-size:10px}
+
+@container(max-width:960px){.sd-trace-workspace{grid-template-columns:1fr}.sd-inspector{display:grid;grid-template-columns:1fr 1fr}.sd-inspector-head,.sd-span-facts,.sd-error,.sd-inspector-section:last-child{grid-column:1/-1}.sd-inspector-section{border-bottom:1px solid var(--line)}.sd-inspector-section+.sd-inspector-section{border-left:1px solid var(--line)}.sd-messages-layout{grid-template-columns:160px minmax(0,1fr);gap:14px}.sd-heading-actions button{padding:6px 8px}.sd-heading-actions button .icon{display:none}}
+
+@container(max-width:650px){.sd-heading{flex-wrap:wrap}.sd-heading h1{font-size:19px}.sd-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.sd-metric{padding:12px}.sd-metric:nth-child(4){border-left:0}.sd-metric:nth-child(n+4){border-top:1px solid var(--line)}.sd-metric b{font-size:17px}.sd-messages-layout{grid-template-columns:1fr}.sd-turn-list{max-height:115px;display:flex;overflow:auto;gap:5px}.sd-turn{width:135px;flex:none}.sd-turns-title{padding:10px}.sd-message-meta time{display:none}.sd-tabs>small{display:none}.sd-inspector{display:block}.sd-inspector-section+.sd-inspector-section{border-left:0}.sd-span-facts{display:grid}.sd-trace-toolbar select{max-width:180px}}
+
+.notification-entry>.icon{color:#62676f}
+
+.notification-head .heading{margin:0}
+
+.notification-empty>.icon{color:#b1bac6}
+
+.notification-dialog .modalfooter{flex-wrap:wrap}
+
+.notification-dialog .modalfooter .notification-secondary{margin-right:auto}
+
+.notification-dialog .note{font-size:10px;margin:0;color:#a2a9b4}
+
+.sd-step-table-head,.sd-step-row{display:grid;grid-template-columns:26px minmax(160px,1fr) 64px minmax(70px,.65fr);gap:8px;align-items:center;padding:12px}
+
+.sd-step-table-head{color:#9ca5b1;font-size:9px;background:#fafbfd;border-bottom:1px solid var(--line)}
+
+.sd-step-table-head>span:nth-child(3){text-align:right}
+
+.sd-step-table-head small{font-size:9px;margin-left:5px}
+
+.sd-session-step-list{max-height:540px;overflow-y:auto;scrollbar-width:thin;scrollbar-gutter:stable}
+
+.sd-step-row{width:100%;border:0;border-radius:0;border-bottom:1px solid #f0f2f5;text-align:left;background:white;padding:12px;min-height:58px}
+
+.sd-step-row[aria-pressed=true]{background:#f1f6fd;box-shadow:inset 2px 0 var(--blue)}
+
+.sd-step-row:hover{background:#f7f9fc}
+
+.sd-step-number{font:10px ui-monospace,SFMono-Regular,monospace;color:#a2aab6}
+
+.sd-step-name{display:flex;flex-direction:column;min-width:0;gap:7px}
+
+.sd-step-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:450;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.sd-step-name>small{font-size:9px;color:#a0a8b3;display:flex;align-items:center;gap:5px;white-space:nowrap}
+
+.sd-step-row .sd-span-duration{font-size:10px}
+
+.sd-step-tabs{display:flex;gap:18px;padding:0 15px;border-bottom:1px solid var(--line)}
+
+.sd-step-tabs button{font-size:11px;border:0;border-radius:0;background:none;color:#9da5b0;padding:11px 0;position:relative}
+
+.sd-step-tabs button[aria-selected=true]{color:var(--blue)}
+
+.sd-step-tabs button[aria-selected=true]:after{content:'';height:2px;background:var(--blue);position:absolute;bottom:-1px;left:0;right:0}
+
+.sd-step-tabs small{font-size:9px;padding:0 3px;background:#f2f4f7;border-radius:3px}
+
+.sd-step-footer{padding:10px 15px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+
+.sd-step-footer button{font-size:10px;color:#778ba8;padding:2px}
+
+#sd-step-body .sd-inspector-section+.sd-inspector-section{border-left:0}
+
+#sd-step-body .sd-span-facts{grid-template-columns:minmax(0,1fr)}
+
+@container(max-width:960px){.sd-trace-workspace{grid-template-columns:1fr}.sd-inspector{display:block}.sd-type-cards{gap:6px}.sd-type-card{padding:10px 8px}.sd-type-card b{font-size:15px}.sd-session-step-list{max-height:390px}}
+
+@container(max-width:650px){.sd-type-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.sd-distribution{padding:12px}.sd-distribution-head{align-items:flex-start}.sd-type-card b{font-size:15px}.sd-step-table-head,.sd-step-row{grid-template-columns:23px minmax(145px,1fr) 60px;gap:5px;padding:11px}.sd-step-row>.sd-waterfall-track,.sd-step-table-head>.sd-waterfall-axis{display:none}.sd-session-step-list{max-height:330px}.sd-execution-intro>small{flex-basis:100%;order:2}.sd-execution-intro>button{padding:3px}.sd-span-search{min-width:110px}}
+
+.sh-toolbar{display:flex;gap:10px;align-items:center;padding:8px 11px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fdfdfe;flex:none}
+
+.sh-toolbar select{border:0;border-left:1px solid var(--line);border-radius:0;padding:4px 5px 4px 10px;font-size:10px;color:#7e8999;background:transparent;max-width:120px}
+
+.sh-toolbar>.text{padding:2px;font-size:10px}
+
+@container(max-width:700px){.sh-overview-head{align-items:flex-start;flex-wrap:wrap}.sh-type-summary{gap:11px;justify-content:flex-start}.sh-overview-head>span>small{display:none}.sh-count{display:none}.sh-workspace{grid-template-columns:1fr}.sh-inspector{position:absolute;inset:0 0 0 auto;width:min(94%,380px);z-index:4;box-shadow:-12px 0 35px #30405b15;border-left:1px solid var(--line)}.sh-row{font-size:10px}.sh-only-issues{font-size:9px}.sh-toolbar{gap:7px}.sh-toolbar select{max-width:91px;padding-left:6px}.sh-bottom>span:nth-child(2){display:none}.sh-gutter{width:27px}.sh-args{max-width:24%}.sh-row-meta{display:none}}
+
+.model-trigger[aria-expanded=true]>.icon{transform:rotate(180deg)}
+
+.model-submenu .icon{color:#203d62}
+
+.model-trigger>.icon{flex:none;color:#96a7bb}
+
+.scheduled-filterbar .segments button{padding:8px 13px}
+
+.task-history-panel .panelhead small{margin-left:8px}
+
+.run-artifact>.icon{color:var(--muted)}
+
+.task-editor-modal{width:min(720px,calc(100vw - 50px))}
+
+.task-editor-modal .modalbody{padding:2px 26px 24px}
+
+.task-md-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 9px;background:#f8fafc;border-bottom:1px solid #e8ecf1}
+
+.task-md-toolbar>div{display:flex;align-items:center;gap:3px}
+
+.task-md-toolbar button{font-size:11px;padding:5px 7px;min-width:25px}
+
+.task-md-toolbar .selected{background:#fff;color:var(--blue);box-shadow:0 1px 3px #dfe5ef}
+
+.task-md-toolbar small{margin-left:6px;color:#a5acb6;font-size:10px}
+
+.session-analysis-controls>select{font-size:11px;padding:6px 10px;border:1px solid #e4e7ec;border-radius:5px;background:white;color:#667180}
+
+.chat-title-button .icon{flex:none;color:#9aa2ad}
+
+.chat-title-button:hover .icon{color:inherit}
+
+.workspace-create-modal{width:min(720px,calc(100vw - 32px))}
+
+.workspace-create-modal .modalbody{padding-bottom:0}
+
+.workspace-create-modal .field{margin-bottom:16px}
+
+.workspace-create-modal .primary:disabled{opacity:.45;cursor:not-allowed}
+
+@media(max-width:600px){.workspace-scope-columns{grid-template-columns:34% minmax(0,1fr)}.workspace-scope-agents{padding:16px 6px}.workspace-scope-scenes{padding:16px 6px}.workspace-scope-row{gap:7px;padding:8px 6px}.workspace-create-modal .modalfooter{flex-wrap:wrap}.workspace-selection-count{width:100%}}
+
+.task-editor-modal{width:min(840px,calc(100vw - 44px))}
+
+.task-editor-modal .modalheader{padding:15px 22px}
+
+.task-editor-modal .modalbody{padding:15px 22px 14px}
+
+.task-editor-modal .modalfooter{padding:12px 22px}
+
+.task-editor-modal .task-editor-section{padding:0;border:0}
+
+.task-editor-modal .task-basics{padding:0}
+
+.task-editor-modal .field{margin:0 0 8px}
+
+.task-editor-modal .task-placeholder-field>input,.task-editor-modal .task-placeholder-field>select{height:36px;padding:0 11px;border-color:#dfe4ec}
+
+.task-editor-modal .task-placeholder-field>textarea{border-color:#dfe4ec}
+
+.task-editor-modal input:not([type=checkbox]):not([type=hidden]),.task-editor-modal select{padding:7px 9px;min-height:34px;font-size:12px}
+
+.task-editor-modal #taskDescription{height:46px;min-height:46px;padding:6px 11px;font-size:12px;line-height:1.6}
+
+.task-inline-control>.icon{margin-left:auto;flex:none;transform:rotate(90deg);color:#8a94a1}
+
+.task-inline-control[aria-expanded=true]>.icon{transform:rotate(-90deg)}
+
+.task-repeat-level button[aria-checked=true]>.icon,.task-repeat-options button[aria-checked=true]>.icon{color:#16ae91}
+
+.task-editor-modal .task-reference-list:empty{display:none}
+
+.task-editor-modal .task-reference-list{min-height:0;padding:0;border:0;margin-bottom:6px;gap:5px}
+
+.task-editor-modal .task-reference{padding:3px 6px;font-size:10px}
+
+.task-editor-modal .task-md-toolbar{padding:3px 7px;min-height:27px}
+
+.task-editor-modal .task-md-toolbar button{padding:3px 5px;font-size:10px;min-width:20px}
+
+.task-editor-modal .task-md-editor #taskPrompt{min-height:86px;height:86px;padding:8px 10px;font-size:11px;line-height:1.65}
+
+.task-editor-modal .task-md-preview{min-height:86px;padding:7px 12px;max-height:180px;overflow:auto;font-size:12px}
+
+.task-editor-modal .task-md-preview h2{font-size:15px;margin:5px 0}
+
+.task-editor-modal .task-md-preview h3{font-size:13px;margin:5px 0}
+
+.task-editor-modal .task-md-preview p{margin:3px 0}
+
+.task-editor-modal .task-outputs-section{padding-top:2px}
+
+.task-editor-modal .task-output-row>.field{grid-column:1;margin:0}
+
+.task-editor-modal .task-output-row .field{margin:0}
+
+.task-editor-modal .task-output-row .field>label{font-size:10px;margin-bottom:4px;color:#8b95a3}
+
+.task-editor-modal .task-output-row input,.task-editor-modal .task-output-row select{min-height:30px!important;padding:5px 8px!important;font-size:11px}
+
+.task-editor-modal .task-add-output{padding:5px 9px;font-size:10px}
+
+@media(max-width:820px){.task-editor-modal{width:calc(100vw - 36px)}.task-settings-row{gap:8px}.task-output-row{grid-template-columns:110px minmax(0,1fr) 98px;gap:6px}.task-date-popover{padding:9px}}
+
+.task-repeat-trigger>.icon,.task-date-trigger>.icon{transform:none}
+
+.task-repeat-trigger[aria-expanded=true]>.icon,.task-date-trigger[aria-expanded=true]>.icon{transform:rotate(180deg)}
+
+.task-repeat-level>button.has-branch>.icon{transform:rotate(-90deg);color:#8794a5}
+
+.task-editor-modal .task-output-row .field>label{font-size:11px}
+
+.task-editor-modal .task-output-row input,.task-editor-modal .task-output-row select{font-size:12px}
+
+/* Keep native select behavior with consistent inset dropdown arrows. */
+.task-editor-modal select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238a94a1' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:14px 14px}
+
+.task-editor-modal select,.task-editor-modal .task-output-row select{padding-right:36px!important}
+
+.task-artifact-item>.icon{color:var(--muted);transform:rotate(-90deg)}
+
+.analysis-scope{position:relative}
+
+.analysis-scope-trigger{display:flex;align-items:center;gap:8px;padding:4px 9px;font-size:12px;border-color:#edf0f4;color:#666;min-width:58px;justify-content:space-between}
+
+.analysis-scope-panel{position:absolute;right:0;top:34px;width:490px;max-width:calc(100vw - 32px);background:white;border:1px solid #e5eaf1;border-radius:9px;box-shadow:0 6px 24px #26384b22;z-index:8;color:#424b56}
+
+.analysis-scope-tools{display:flex;justify-content:flex-end;align-items:center;padding:10px 12px;border-bottom:1px solid #edf0f5}
+
+.analysis-scope-tools button{border:0;padding:0 6px;font-size:12px;color:#2788ff;background:none}
+
+.analysis-scope-columns{display:grid;grid-template-columns:1fr 1.25fr;min-height:225px}
+
+.analysis-scope-scenes{border-right:1px solid #edf0f5;padding:6px}
+
+.analysis-scope-assets{padding:6px}
+
+.analysis-scope-caption{color:#99a1ad;font-size:12px;padding:4px 7px 8px}
+
+.analysis-scope-row{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:5px;min-height:37px}
+
+.analysis-scope .analysis-scope-row.active{background:#e8f2ff!important}
+
+.analysis-scope-row:hover{background:#f2f7ff}
+
+.analysis-scope-check{border:1px solid #d9e1ec;border-radius:3px;width:15px;height:15px;flex-shrink:0;padding:0;display:grid;place-items:center;font-size:12px;line-height:1}
+
+.analysis-scope-check.true,.analysis-scope-check.mixed{background:#2788ff;color:white;border-color:#2788ff}
+
+.analysis-scope-name,.analysis-scope-asset-name{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:0;padding:0;width:100%;font-size:12px;text-align:left;background:none!important}
+
+.analysis-scope-row.active .analysis-scope-name{color:#2788ff}
+
+.analysis-scope-asset-name small{font-size:12px;background:#f3f5f8;color:#8a96a6;padding:1px 5px;border-radius:4px;white-space:nowrap}
+
+.analysis-scope-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf0f5;padding:8px 12px;color:#8794a6;font-size:12px}
+
+.analysis-scope-foot button{background:#2788ff;border-color:#2788ff;color:white;padding:3px 13px;font-size:12px}
+
+.analysis-scope-demo{padding:0 12px 8px;font-size:12px;color:#9aa6b6}
+
+@media(max-width:600px){.analysis-scope-panel{width:340px}.analysis-scope-columns{grid-template-columns:1fr 1.2fr}.analysis-scope-row{padding:6px 3px;gap:4px}}
+
+.session-analysis-controls{margin:22px 0 14px;gap:12px;flex-wrap:nowrap}
+
+.artifact-manager>.heading{margin-bottom:6px}
+
+.artifact-list-group>header .icon{color:#8794a7}
+
+.artifact-name .icon{color:#6992cd;flex:none}
+
+.artifact-edit-modal{width:min(820px,calc(100vw - 40px))}
+
+.artifact-folder-chevron .icon{transition:transform .15s}
+
+.artifact-folder-closed .artifact-folder-chevron .icon{transform:rotate(-90deg)}
+
+/* Shared screenshot-style summary cards for cost, health and user behavior. */
+.page.is-analysis .analysis-metrics{display:flex;flex-wrap:wrap;container-type:inline-size;container-name:metrics;gap:12px;margin-bottom:18px}
+
+/* Default 3-up — avoid collapsing to 1–2 columns too early */
+.page.is-analysis .analysis-metrics .compact-stat{display:flex;flex:1 1 calc((100% - 24px)/3);flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left;gap:0;min-height:156px;min-width:0;padding:16px;border:1px solid #e1e7ef;border-radius:12px;background:#fff}
+
+.metric-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-height:42px;width:100%}
+
+.page.is-analysis .analysis-metrics .metric-card-head>.metric-label{display:flex;align-items:center;justify-content:flex-start;gap:5px;font-size:12px;line-height:20px;font-weight:400;color:#777c83;min-width:0;padding-top:1px}
+
+/* Shared info (i) icon — cards + chart panel titles */
+.page.is-analysis .metric-help{flex:none;color:var(--placeholder,#b3b3b3)}
+.page.is-analysis .metric-help>.icon{width:14px;height:14px}
+
+.metric-symbol{display:flex;align-items:center;justify-content:center;width:42px;height:42px;flex:none;border-radius:15px;background:#f7f7f8;color:#4a5663}
+
+.metric-symbol svg{display:block}
+
+.metric-card-value{display:block;margin-top:12px;min-width:0}
+
+.page.is-analysis .analysis-metrics .compact-stat strong{display:block;font-size:30px;font-weight:600;line-height:36px;letter-spacing:-.6px;color:#283038;font-variant-numeric:tabular-nums}
+
+.metric-comparison{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px;color:#777c83;font-size:12px;font-weight:400;line-height:18px;min-height:18px}
+
+.metric-change{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.metric-change.improved{color:#23ad57}
+
+.metric-change.worsened{color:#d36b63}
+
+.metric-change.neutral{color:#74797f}
+
+.page.is-analysis .behavior-feedback-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;justify-content:start;gap:24px;width:100%;margin:0}
+
+.metric-feedback-item{min-width:0}
+
+.metric-feedback-item+.metric-feedback-item{border-left:1px solid #edf0f4;padding-left:24px}
+
+.page.is-analysis .metric-feedback-item .metric-card-value{display:flex;align-items:baseline;gap:8px}
+
+.page.is-analysis .metric-feedback-item .metric-card-value small{font-size:12px;font-weight:400;line-height:18px;color:#8b9098}
+
+.page.is-analysis .analysis-metrics .compact-stat:nth-child(4n) .metric-tooltip{left:auto;right:-8px;transform:none}
+
+.page.is-analysis .analysis-metrics .compact-stat:nth-child(4n) .metric-tooltip:after{left:auto;right:10px}
+
+.page.is-analysis .analysis-metrics .compact-stat:nth-child(4n+1) .metric-tooltip{left:0;right:auto;transform:none}
+
+.page.is-analysis .analysis-metrics .compact-stat:nth-child(4n+1) .metric-tooltip:after{left:6px;right:auto}
+
+/* Keep health error at 3-up (3+2); performance defaults to 2+2 */
+@container metrics (max-width:520px){
+  .page.is-analysis .analysis-metrics .compact-stat{flex-basis:calc((100% - 12px)/2)}
+  .page.is-analysis .health-error-metrics .compact-stat{flex:1 1 calc((100% - 28px)/3)}
+  .page.is-analysis .health-performance-metrics .compact-stat{flex:1 1 calc((100% - 14px)/2)}
+  .page.is-analysis .cost-dashboard .compact-stat{flex:1 1 calc((100% - 28px)/3)}
+}
+
+@container metrics (max-width:360px){.page.is-analysis .analysis-metrics .compact-stat{flex-basis:100%}}
+
+.page.is-analysis .compact-stat[data-feedback-card]{flex-basis:calc((200% - 12px)/3)}
+
+/* Health error mid-width: 3-up → 3+2. Performance: 2+2 until wide enough for 4-up. */
+.page.is-analysis .health-error-metrics .compact-stat{
+  flex:1 1 calc((100% - 28px)/3);
+}
+.page.is-analysis .health-performance-metrics .compact-stat{
+  flex:1 1 calc((100% - 14px)/2);
+}
+
+/* One chart visual system for the three analysis dashboards. */
+.page.is-analysis :is(.cost-trend-panel,.health-slow-panel,.health-alert-distribution,.health-duration-panel,.health-live-alerts,.behavior-trends>.panel){border:1px solid #e3e9f2!important;border-radius:12px!important;background:#fff;padding:14px 16px!important;box-shadow:none;margin:0!important}
+
+.page.is-analysis .cost-trend-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;min-width:0}
+
+.page.is-analysis .health-perf-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-width:0}
+
+@media(max-width:900px){
+  .page.is-analysis .health-perf-panels{grid-template-columns:1fr}
+}
+
+.page.is-analysis .health-perf-panels .health-slow-panel,
+.page.is-analysis .health-perf-panels .health-duration-panel{margin:0;min-width:0}
+
+.page.is-analysis .health-perf-panels .health-slow-chart{min-width:0}
+
+.page.is-analysis :is(.cost-trend-panel,.health-slow-panel,.health-alert-distribution,.health-duration-panel,.health-live-alerts,.behavior-trends>.panel)>.panelhead{margin-bottom:18px;min-height:22px}
+
+.page.is-analysis :is(.cost-trend-panel,.health-slow-panel,.health-alert-distribution,.health-duration-panel,.health-live-alerts,.behavior-trends>.panel)>.panelhead h2{font-size:12px;font-weight:400;line-height:16px;color:var(--text-secondary,#8c8c8c)}
+
+.page.is-analysis :is(.analysis-line-chart,.cost-trend-chart,.health-slow-chart,.health-alert-chart,.behavior-chart){font-family:inherit;color:#8998ae}
+
+.page.is-analysis :is(.analysis-line-chart,.cost-trend-chart,.health-slow-chart,.health-alert-chart,.behavior-chart) text{font-family:inherit;font-size:12px;fill:#8998ae}
+
+.page.is-analysis :is(.analysis-line-chart,.cost-trend-chart,.health-slow-chart,.health-alert-chart,.behavior-chart) line{stroke:#e5ebf3;vector-effect:non-scaling-stroke}
+
+.page.is-analysis .analysis-series{stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+
+.page.is-analysis :is(.analysis-line-chart,.cost-trend-chart,.health-slow-chart){height:280px}
+
+.page.is-analysis .behavior-trends .analysis-line-chart{height:240px}
+
+.page.is-analysis .behavior-feedback-panel .analysis-line-chart{height:280px}
+
+.page.is-analysis .health-alert-chart{width:100%;height:100%}
+
+.page.is-analysis :is(.analysis-line-legend,.cost-trend-legend,.health-slow-legend,.behavior-legend){font-size:11px;line-height:20px;color:#929aa7;gap:8px 16px}
+
+.page.is-analysis :is(.analysis-line-legend,.cost-trend-legend,.health-slow-legend,.behavior-legend) i{width:12px;height:2px;border-radius:1px;background:currentColor}
+
+.page.is-analysis .health-duration-panel .step-track{height:10px;border-radius:999px;background:#f1f4f8}
+
+.page.is-analysis .health-duration-panel .step-track>i{border-radius:999px}
+
+.page.is-analysis .health-duration-panel .step-row{font-size:12px;color:#8998ae}
+
+.page.is-analysis .health-duration-panel .step-row>span>i{width:12px;height:3px;border-radius:999px}
+
+.page.is-analysis .health-duration-panel .step-row>b{font-size:11px;font-weight:500;color:#677487}
+
+.page.is-analysis :is(.cost-chart-tooltip,.health-trend-tooltip){background:#fff;border:1px solid #e3e9f2;border-radius:8px;box-shadow:0 5px 20px #263f5c16}
+
+@media(max-width:1100px){.page.is-analysis :is(.analysis-line-chart,.cost-trend-chart,.health-slow-chart),.page.is-analysis .behavior-feedback-panel .analysis-line-chart{height:260px}}
+
+.page.is-analysis .heading h1{font-size:24px;line-height:32px}
+
+.page.is-analysis .cost-metric-picker summary{font-size:14px;line-height:22px;font-weight:600}
+
+.page.is-analysis .panelhead h2>.metric-label{font-size:12px;line-height:16px;font-weight:400;color:var(--text-secondary,#8c8c8c)}
+
+.page.is-analysis .analysis-metrics .compact-stat strong{font-size:30px;line-height:36px}
+
+.page.is-analysis :is(.metric-label,.metric-comparison,.metric-tooltip,.cost-trend-legend,.health-slow-legend,.behavior-legend,.updated-time,.cost-range-note,.health-range-note,.behavior-range-note){font-size:12px;line-height:20px}
+
+.page.is-analysis .metric-card-head>.metric-label{font-size:12px;line-height:20px}
+
+
+.page.is-analysis :is(.cost-trend-panel,.health-slow-panel,.health-alert-distribution,.health-duration-panel,.health-live-alerts,.behavior-trends>.panel)>.panelhead small{font-size:12px;line-height:20px}
+
+.page.is-analysis :is(.toolbar .segments button,.analysis-scope-trigger,.cost-metric-options button){font-size:12px}
+
+.page.is-analysis :is(.health-alert-name,.health-alert-message,.health-alert-meta time,.health-alert-footer,.step-row,.step-row>b){font-size:12px;line-height:20px}
+
+.page.is-analysis .health-duration-panel .step-row>b{font-size:12px;line-height:20px}
+
+.page.is-analysis :is(.cost-chart-tooltip,.health-trend-tooltip),.page.is-analysis :is(.cost-chart-tooltip,.health-trend-tooltip) :is(b,span,strong,small){font-size:12px;line-height:20px}
+
+.page.is-analysis .analysis-chart-host{position:relative;display:block;width:100%;height:280px;min-width:0;overflow:visible;padding:0}
+
+.page.is-analysis .analysis-chart-host>svg{display:block;width:100%!important;height:100%!important;min-width:0!important;max-width:none;overflow:visible;font-family:inherit}
+
+.page.is-analysis .analysis-chart-host>svg text{font-family:inherit;font-size:12px;letter-spacing:0;fill:var(--text-45)}
+
+.page.is-analysis [data-analysis-chart="health-alert"]{flex:1 1 auto;min-height:0;height:auto!important}
+
+.page.is-analysis :is([data-analysis-chart="behavior-sessions"],[data-analysis-chart="behavior-users"]){height:240px}
+
+@media(max-width:1100px){.page.is-analysis :is([data-analysis-chart^="cost-"],[data-analysis-chart="health-slow"],[data-analysis-chart="behavior-feedback"]){height:260px}}
+
+.cd-card-footer>.icon{flex:none}
+
+.cd-widget-head>.icon{flex:none;color:#8c9db4}
+
+.cd-metric-list{padding-top:18px;position:sticky;top:0}
+
+.cd-metric-list>.panelhead{margin:0 0 12px}
+
+.cd-metric-list h2{font-size:13px}
+
+.cd-metric-item{display:flex;align-items:center;gap:9px;width:100%;border:1px solid transparent;padding:12px 8px;margin-bottom:5px;text-align:left;background:transparent;min-width:0}
+
+.cd-metric-item.selected{background:#edf4ff;color:var(--blue);border-color:#dce9fd}
+
+.cd-metric-index{width:22px;height:22px;display:grid;place-items:center;background:#eef1f5;color:#7d8a9d;border-radius:6px;font-size:11px;flex:none}
+
+.cd-metric-item.selected .cd-metric-index{background:#dceaff;color:var(--blue)}
+
+.cd-metric-item>span:nth-child(2){min-width:0;flex:1}
+
+.cd-metric-item b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:550}
+
+.cd-metric-item small{display:block;font-size:10px;margin-top:4px}
+
+.cd-metric-item>.icon{flex:none}
+
+.cd-metric-editor-head{padding:18px 21px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:white;border-radius:11px 11px 0 0}
+
+.cd-metric-editor-head h2{font-size:14px;margin-bottom:5px}
+
+.cd-metric-editor-head small{font-size:11px}
+
+.cd-metric-editor-head button{font-size:11px;color:#8c99aa}
+
+.cd-metric-editor-head button:disabled{opacity:.4;cursor:default}
+
+.cd-metric-workspace{display:grid;grid-template-columns:minmax(265px,.95fr) minmax(280px,1.2fr);min-width:0}
+
+.cd-source-sample>.panelhead{margin-bottom:12px}
+
+@media(max-width:1200px){.cd-metric-workspace{grid-template-columns:minmax(0,1fr)}.cd-settings{border-right:0;border-bottom:1px solid var(--line)}.cd-preview{border-radius:0 0 11px 11px}.cd-editor-body{grid-template-columns:160px minmax(0,1fr);gap:16px}}
+
+@media(max-width:800px){.cd-widget-grid{grid-template-columns:minmax(0,1fr)}.cd-editor-body{grid-template-columns:minmax(0,1fr)}.cd-metric-list{position:static}.cd-metric-list #dashboardMetricList{display:flex;overflow:auto;gap:6px}.cd-metric-item{min-width:150px;max-width:180px}.cd-dashboard-meta{gap:12px}.cd-basics{padding:18px}}
+
+.cd-layout-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border:1px solid #dce8fc;background:#f5f8fe;border-radius:9px;padding:13px 16px;margin:0 0 20px}
+
+.cd-layout-toolbar>label{display:flex;align-items:center;gap:10px;font-size:12px;white-space:nowrap}
+
+.cd-layout-toolbar select{padding:7px 12px;min-width:120px}
+
+.cd-layout-toolbar>span{font-size:11px;color:#8b98ab}
+
+.cd-move-down>.icon{transform:rotate(180deg)}
+
+.cd-metric-entry{display:flex;gap:0;align-items:center;min-width:0}
+
+.cd-metric-entry>.cd-metric-item{flex:1;min-width:0}
+
+.cd-metric-order{display:flex;flex-direction:column;flex:none;margin:0 0 5px 2px}
+
+.cd-metric-order button{padding:4px;color:#98a4b6}
+
+.cd-metric-order button:disabled{opacity:.25;cursor:default}
+
+@container dashboard-layout (max-width:700px){.cd-visual-row{grid-template-columns:minmax(0,1fr)}.cd-layout-half{grid-column:1/-1}.cd-layout-toolbar{align-items:flex-start}}
+
+.workspace-create-modal .workspace-scope-agents{max-height:360px;overflow:auto}
+
+.cd-layout-toolbar{justify-content:flex-start;padding:12px 15px}
+
+.cd-layout-toolbar .icon{color:#6c98dc}
+
+/* ── Integration with workbench/aiops shell ── */
+.page.is-analysis {
+  --line: #ececec;
+}
+.res-toolbar-actions .analysis-scope {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.res-toolbar-actions .analysis-scope-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--border-strong, #d8d8d8);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #444;
+  cursor: pointer;
+}
+.res-toolbar-actions .analysis-scope-trigger:hover {
+  background: var(--hover, #f5f5f5);
+  border-color: var(--border-hover, #c0c0c0);
+  color: #111;
+}
+.res-toolbar-actions .analysis-scope-chev {
+  width: 12px;
+  height: 12px;
+  color: #999;
+  flex-shrink: 0;
+}
+.res-toolbar-actions .analysis-scope-trigger:hover .analysis-scope-chev {
+  color: #111;
+}
+.res-toolbar-actions .analysis-scope-trigger[aria-expanded="true"] .analysis-scope-chev {
+  transform: rotate(180deg);
+}
+.res-toolbar-actions .analysis-scope-panel {
+  z-index: 40;
+  right: 0;
+  left: auto;
+}
+.page.is-analysis .cost-dashboard {
+  margin-top: 0;
+}
+.page.is-analysis .behavior-dashboard {
+  margin-top: 4px;
+}
+.page.is-analysis .analysis-sticky-chrome + .health-dashboard {
+  margin-top: 14px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.page.is-analysis .health-dashboard > .analysis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-margin-top: var(--health-sticky-offset, 120px);
+}
+
+.page.is-analysis .health-dashboard > .analysis-section .analysis-metrics {
+  margin-bottom: 0;
+}
+
+.page.is-analysis .health-section-panels {
+  min-width: 0;
+}
+
+.page.is-analysis .health-section-panels > .health-alert-panels,
+.page.is-analysis .health-section-panels > .health-perf-panels {
+  gap: 14px;
+}
+.aiops-analysis-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+}
+.aiops-analysis-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+}
+.aiops-analysis-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, calc(100vw - 48px));
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ececec;
+  box-shadow: 0 16px 48px rgba(0,0,0,.12);
+}
+.aiops-analysis-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 0;
+}
+.aiops-analysis-modal-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.aiops-analysis-modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+}
+.aiops-analysis-modal-body {
+  padding: 12px 18px 18px;
+}
+
+/* Behavior board: keep full Enhance layout (5 metrics + 3 charts) */
+.page.is-analysis .behavior-dashboard .behavior-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.page.is-analysis .behavior-dashboard .behavior-metrics .compact-stat {
+  flex: 1 1 calc((100% - 28px) / 3);
+  min-width: 0;
+}
+
+.page.is-analysis .behavior-dashboard .compact-stat[data-feedback-card] {
+  flex: 1 1 calc((200% - 14px) / 3);
+  min-width: 0;
+}
+
+.page.is-analysis .behavior-trends {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.page.is-analysis .behavior-trends .behavior-feedback-panel {
+  grid-column: 1 / -1;
+}
+
+.page.is-analysis .behavior-dashboard .analysis-chart-host {
+  height: 240px;
+}
+
+.page.is-analysis .behavior-dashboard .behavior-feedback-panel .analysis-chart-host {
+  height: 280px;
+}
+
+.page.is-analysis .metric-unit {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-secondary, #8c8c8c);
+}
+
+@media (max-width: 720px) {
+  .page.is-analysis .behavior-trends {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Workbench DS pass: monitor boards (cost / health / behavior) ── */
+.page.is-analysis .analysis-metrics {
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.page.is-analysis .analysis-metrics .compact-stat {
+  min-height: 108px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #ececec);
+  border-radius: var(--radius-card, 12px);
+  background: #fff;
+}
+
+.page.is-analysis .analysis-metrics .metric-card-head {
+  min-height: 0;
+  gap: 8px;
+}
+
+.page.is-analysis .analysis-metrics .metric-card-head > .metric-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-secondary, #8c8c8c);
+  padding-top: 0;
+}
+
+.page.is-analysis .analysis-metrics .metric-label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Trial: hide metric card icons on cost / health / behavior boards */
+.page.is-analysis .metric-symbol {
+  display: none;
+}
+
+.page.is-analysis .analysis-metrics .metric-card-head {
+  min-height: 0;
+  justify-content: flex-start;
+}
+
+.page.is-analysis .metric-card-value {
+  margin-top: 10px;
+}
+
+.page.is-analysis .analysis-metrics .compact-stat strong {
+  font-size: 24px;
+  line-height: 28px;
+  letter-spacing: -0.02em;
+  color: #111;
+  font-weight: 600;
+}
+
+.page.is-analysis .metric-comparison {
+  margin-top: 6px;
+  color: var(--text-secondary, #8c8c8c);
+  font-size: 12px;
+  line-height: 16px;
+  gap: 4px;
+}
+
+.page.is-analysis .metric-change.improved {
+  color: var(--status-live-fg, #1f7a45);
+}
+
+.page.is-analysis .metric-change.worsened {
+  color: var(--status-severe-fg, #b91c1c);
+}
+
+.page.is-analysis .metric-change.neutral {
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.page.is-analysis .metric-feedback-item + .metric-feedback-item {
+  border-left-color: var(--border, #ececec);
+}
+
+.page.is-analysis .metric-feedback-item .metric-card-value small {
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.page.is-analysis :is(
+  .health-alert-distribution,
+  .health-live-alerts,
+  .panel
+) {
+  border: 1px solid var(--border, #ececec) !important;
+  border-radius: var(--radius-card, 12px) !important;
+  background: #fff;
+  padding: 14px 16px !important;
+  box-shadow: none;
+  margin-bottom: 14px;
+}
+
+/* Trend cards: no margin between cards — parent gap only */
+.page.is-analysis :is(
+  .cost-trend-panel,
+  .health-slow-panel,
+  .health-duration-panel,
+  .behavior-trends > .panel
+) {
+  border: 1px solid var(--border, #ececec) !important;
+  border-radius: var(--radius-card, 12px) !important;
+  background: #fff;
+  padding: 14px 16px !important;
+  box-shadow: none;
+  margin: 0 !important;
+}
+
+.page.is-analysis .health-live-alerts {
+  padding-top: 10px !important;
+}
+
+.page.is-analysis :is(
+  .cost-trend-panel,
+  .health-slow-panel,
+  .health-alert-distribution,
+  .health-duration-panel,
+  .health-live-alerts,
+  .behavior-trends > .panel
+) > .panelhead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  min-height: 20px;
+  text-align: left;
+}
+
+.page.is-analysis .health-live-alerts > .panelhead {
+  justify-content: space-between;
+}
+
+/* Default: title left, legend right. Narrow: stack, both flush left.
+   Specificity must beat `.page.is-analysis :is(...) > .panelhead { align-items:center }`
+   or stacked column items stay horizontally centered. */
+.page.is-analysis .cost-trend-panel {
+  container-type: inline-size;
+  container-name: cost-trend;
+}
+
+.page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head > h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head > .cost-trend-legend {
+  flex: 0 0 auto;
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+@container cost-trend (max-width: 640px) {
+  .page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head > h2,
+  .page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head > .cost-trend-legend {
+    align-self: flex-start;
+    margin-left: 0;
+    width: max-content;
+    max-width: 100%;
+  }
+  .page.is-analysis .cost-trend-panel > .panelhead.cost-trend-head > .cost-trend-legend {
+    justify-content: flex-start;
+  }
+}
+
+/* Section groups: only non-last sections keep bottom spacing */
+.page.is-analysis .analysis-section {
+  margin-bottom: 24px;
+  padding-bottom: 0;
+}
+.page.is-analysis .analysis-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.page.is-analysis .health-dashboard .analysis-section {
+  margin-bottom: 26px;
+}
+.page.is-analysis .health-dashboard .analysis-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Sticky page title */
+.page.is-analysis .analysis-sticky-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #fff;
+  margin: -32px -32px 0;
+  padding: 32px 32px 0;
+}
+
+.page.is-analysis .analysis-sticky-chrome > .page-heading.has-actions {
+  padding: 0 0 12px;
+}
+
+.page.is-analysis .health-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--text-88, rgba(0, 0, 0, 0.88));
+}
+
+/* Chart panel titles match metric-card labels (via metricHelp) */
+.page.is-analysis :is(
+  .cost-trend-panel,
+  .health-slow-panel,
+  .health-alert-distribution,
+  .health-duration-panel,
+  .health-live-alerts,
+  .behavior-trends > .panel
+) > .panelhead h2 {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-secondary, #8c8c8c);
+  letter-spacing: 0;
+}
+
+.page.is-analysis .panelhead h2 > .metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.page.is-analysis .panelhead h2 .metric-label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page.is-analysis :is(.cost-trend-legend, .health-slow-legend, .behavior-legend) {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary, #8c8c8c);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.page.is-analysis :is(.cost-range-note, .health-range-note, .behavior-range-note) {
+  margin-top: 4px;
+  color: var(--text-secondary, #8c8c8c);
+  font-size: 12px;
+}
+
+.page.is-analysis :is(.cost-chart-tooltip, .health-trend-tooltip) {
+  border: 1px solid var(--border, #ececec);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.page.is-analysis .health-alert-item {
+  border-radius: 8px;
+}
+
+.page.is-analysis .health-alert-item:hover {
+  background: var(--hover, #f5f5f5);
+}
+
+.page.is-analysis .health-duration-panel .step-track {
+  background: var(--bg-subtle, #fafafa);
+}
+
+.page.is-analysis .health-duration-panel .step-row,
+.page.is-analysis .health-duration-panel .step-row > b {
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.page.is-analysis :is(.cost-trend-chart, .health-slow-chart, .health-alert-chart, .behavior-chart) text {
+  fill: #a3a3a3;
+}
+
+.page.is-analysis :is(.cost-trend-chart, .health-slow-chart, .health-alert-chart, .behavior-chart) line {
+  stroke: #f0f0f0;
+}
+
+@container metrics (max-width: 520px) {
+  .page.is-analysis .compact-stat[data-feedback-card] {
+    flex-basis: 100%;
+  }
+}
+
+/* Cost metrics stay 3×2 (two rows). */
+.page.is-analysis .cost-dashboard .compact-stat {
+  flex: 1 1 calc((100% - 28px) / 3);
+}
+
+/* Wide enough → health error 5-up / performance 4-up / behavior one row */
+@container metrics (min-width: 860px) {
+  .page.is-analysis .health-error-metrics .compact-stat {
+    flex: 1 1 calc((100% - 56px) / 5);
+  }
+  .page.is-analysis .health-performance-metrics .compact-stat {
+    flex: 1 1 calc((100% - 42px) / 4); /* 4 in one row when wide */
+  }
+  .page.is-analysis .behavior-dashboard .behavior-metrics .compact-stat {
+    flex: 1 1 calc((100% - 70px) / 6);
+  }
+  .page.is-analysis .behavior-dashboard .compact-stat[data-feedback-card] {
+    flex: 1 1 calc((200% - 56px) / 6);
+  }
+}
+
+.page.is-analysis .health-alert-panels {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 720px) {
+  .page.is-analysis .health-alert-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Beat the shared :is() panel rule (its .behavior-trends > .panel argument raises specificity). */
+.page.is-analysis .health-alert-panels > .health-alert-distribution,
+.page.is-analysis .health-alert-panels > .health-live-alerts,
+.page.is-analysis .health-perf-panels > .health-duration-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 12px !important;
+  background: #fff;
+  padding: 12px !important;
+  box-shadow: none;
+  margin: 0 !important;
+  gap: 8px;
+}
+
+.page.is-analysis .health-alert-chart-row,
+.widget-health-distribution .health-alert-chart-row {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 16px;
+  column-gap: 8px;
+  row-gap: 6px;
+}
+
+.page.is-analysis .health-alert-ylabels,
+.widget-health-distribution .health-alert-ylabels {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  min-width: 0;
+}
+
+.page.is-analysis .health-alert-ylabel,
+.widget-health-distribution .health-alert-ylabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-45);
+  white-space: nowrap;
+}
+
+.page.is-analysis .health-alert-chart-row > .health-alert-plot,
+.widget-health-distribution .health-alert-chart-row > .health-alert-plot {
+  grid-column: 2;
+  grid-row: 1;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.page.is-analysis .health-alert-chart-row .health-alert-chart,
+.widget-health-distribution .health-alert-chart-row .health-alert-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page.is-analysis .health-alert-xaxis,
+.widget-health-distribution .health-alert-xaxis {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-alert-panels > .panel > .panelhead,
+.widget-health-alerts .health-alert-panels > .panel > .panelhead,
+.page.is-analysis .health-perf-panels > .health-duration-panel > .panelhead {
+  margin: 0;
+  min-height: 0;
+  gap: 8px;
+}
+
+.page.is-analysis .health-duration-panel > .panelhead {
+  justify-content: space-between;
+}
+
+.page.is-analysis .health-alert-panels > .panel > .panelhead h2,
+.widget-health-alerts .health-alert-panels > .panel > .panelhead h2,
+.page.is-analysis .health-perf-panels > .health-duration-panel > .panelhead h2,
+.page.is-analysis .health-alert-panels > .panel > .panelhead h2 > .metric-label,
+.widget-health-alerts .health-alert-panels > .panel > .panelhead h2 > .metric-label,
+.page.is-analysis .health-perf-panels > .health-duration-panel > .panelhead h2 > .metric-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-duration-panel > .panelhead small {
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 16px;
+  color: #92969e;
+}
+
+.page.is-analysis .health-alert-chart text,
+.widget-health-distribution .health-alert-chart text {
+  fill: var(--text-45);
+  font-size: 12px;
+}
+
+.page.is-analysis .health-alert-chart line,
+.widget-health-distribution .health-alert-chart line {
+  stroke: #e8edf3;
+}
+
+.page.is-analysis .health-live-alerts .segments,
+.widget-health-alerts .segments {
+  margin-left: auto;
+  padding: 2px;
+  background: var(--fill-03, rgba(0, 0, 0, 0.03));
+  border-radius: 6px;
+  gap: 0;
+}
+
+.page.is-analysis .health-live-alerts .segments button,
+.widget-health-alerts .segments button {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-live-alerts .segments .selected,
+.widget-health-alerts .segments .selected {
+  background: #fff;
+  color: var(--text-88);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.page.is-analysis .health-alert-list,
+.widget-health-alerts .health-alert-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Item padding is 8px. Pull the list out so that text lines up with the title. */
+  margin-left: -8px;
+  margin-right: -8px;
+}
+
+.page.is-analysis .health-alert-list > .health-alert-feed,
+.widget-health-alerts .health-alert-list > .health-alert-feed {
+  flex: 1 1 auto;
+  padding-right: 0;
+}
+
+.page.is-analysis .health-alert-list > .health-alert-footer,
+.widget-health-alerts .health-alert-list > .health-alert-footer {
+  padding: 0 8px;
+}
+
+.page.is-analysis .health-alert-item,
+.widget-health-alerts .health-alert-item {
+  position: relative;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 0;
+  margin: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.page.is-analysis .health-alert-item + .health-alert-item,
+.widget-health-alerts .health-alert-item + .health-alert-item {
+  margin-top: 9px;
+}
+
+.page.is-analysis .health-alert-item + .health-alert-item::before,
+.widget-health-alerts .health-alert-item + .health-alert-item::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -5px;
+  height: 1px;
+  background: #f0f0f0;
+}
+
+.page.is-analysis .health-alert-item:hover,
+.widget-health-alerts .health-alert-item:hover {
+  background: var(--hover, #f5f5f5);
+  border-color: transparent;
+  border-radius: 8px;
+}
+
+.page.is-analysis .health-alert-name,
+.widget-health-alerts .health-alert-name {
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-alert-name > b,
+.widget-health-alerts .health-alert-name > b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--text-88);
+}
+
+.page.is-analysis .health-alert-name > span:last-child,
+.widget-health-alerts .health-alert-name > span:last-child {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-alert-message,
+.widget-health-alerts .health-alert-message,
+.page.is-analysis .health-alert-meta time,
+.widget-health-alerts .health-alert-meta time,
+.page.is-analysis .health-alert-footer,
+.widget-health-alerts .health-alert-footer {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.page.is-analysis .health-alert-footer,
+.widget-health-alerts .health-alert-footer {
+  margin-top: 0;
+}
+
+.page.is-analysis .health-duration-panel .step-bars,
+.widget-duration .step-bars {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+  padding: 0;
+}
+
+.page.is-analysis .health-duration-panel .step-row,
+.widget-duration .step-row {
+  grid-template-columns: 88px minmax(0, 1fr) 72px;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-45);
+}
+
+.page.is-analysis .health-duration-panel .step-row > span > i,
+.widget-duration .step-row > span > i {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.page.is-analysis .health-duration-panel .step-row > b,
+.widget-duration .step-row > b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--text-88);
+}
+
+.page.is-analysis .health-duration-panel .step-track,
+.widget-duration .step-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--fill-03, rgba(0, 0, 0, 0.03));
+}
+
+.page.is-analysis .health-duration-panel .step-track > i,
+.widget-duration .step-track > i {
+  border-radius: 4px;
+}

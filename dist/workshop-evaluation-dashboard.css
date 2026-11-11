@@ -1,0 +1,33 @@
+/* Compact statistics belong to the workshop panel, above its resource list. */
+.ev-dashboard{container-type:inline-size;min-width:0;margin:0 0 18px}
+.ev-dashboard-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:30px;margin-bottom:12px}
+.ev-dashboard-toolbar:only-child{margin-bottom:0}
+.ev-dashboard-context{display:flex;flex:1;align-items:center;gap:10px;min-width:0;flex-wrap:wrap;color:#8a94a3;font-size:11px}
+.ev-dashboard-grid{display:grid;grid-template-columns:repeat(var(--ev-metric-count,4),minmax(0,1fr));gap:12px}
+.ev-stat-card{position:relative;display:flex;flex-direction:column;min-width:0;box-sizing:border-box;min-height:88px;padding:14px 16px;border:1px solid #e2e6ec;border-radius:8px;background:#fff}
+.ev-stat-heading{display:flex;align-items:center;gap:6px;color:#84909d;line-height:18px;font-size:12px}
+.ev-stat-heading>span:first-child{min-width:0;overflow-wrap:anywhere}
+.ev-stat-number{display:flex;align-items:baseline;gap:6px;margin-top:auto;padding-top:9px;min-width:0}
+body.studio-mode .ev-stat-number strong{color:#344052;font-size:24px;font-weight:600;line-height:1.2;letter-spacing:-.3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+body.studio-mode .ev-stat-number small{color:#98a1ad;font-size:11px;white-space:nowrap}
+.ev-stat-help{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
+body.studio-mode .ev-stat-help>button{display:grid;place-items:center;width:13px;height:13px;padding:0;border:1px solid #a9b2bf;border-radius:50%;color:#929dab;background:transparent;font:10px/1 Georgia,serif}
+.ev-stat-help>[role=tooltip]{display:none;position:absolute;left:-20px;top:calc(100% + 8px);z-index:440;width:250px;max-width:65vw;box-sizing:border-box;padding:9px 11px;border-radius:6px;background:#2d3745;color:#fff;box-shadow:0 5px 18px #17264024;font-size:11px;line-height:1.7;font-weight:400}
+.ev-stat-help:hover>[role=tooltip],.ev-stat-help:focus-within>[role=tooltip]{display:block}
+.ev-stat-card:last-child .ev-stat-help>[role=tooltip]{left:auto;right:-10px}
+.ev-period-selector{position:relative;display:inline-block;flex:0 0 auto;margin-left:auto}
+.ev-period-selector>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:150px;box-sizing:border-box;padding:5px 10px;min-height:30px;border:1px solid #d7dce3;border-radius:7px;background:#fff;color:#344052;list-style:none;font-size:12px;cursor:pointer;white-space:nowrap}
+.ev-period-selector>summary::-webkit-details-marker{display:none}
+.ev-period-selector[open]>summary{border-color:#2782ee;box-shadow:0 0 0 2px #d4e7ff}
+.ev-period-selector[open]>summary .ev-dropdown-arrow{transform:rotate(180deg)}
+.ev-period-menu{display:none;position:fixed;z-index:450;width:180px;box-sizing:border-box;padding:4px 0;border:1px solid #d9dde3;border-radius:8px;background:#fff;box-shadow:0 5px 18px #17264024;overflow:auto}
+.ev-period-selector[open]>.ev-period-menu{display:block}
+.ev-period-menu>button{display:block;width:100%;border:0;border-radius:0;background:#fff;color:#344052;padding:10px 14px;font:inherit;font-size:12px;text-align:left;cursor:pointer;white-space:nowrap}
+.ev-period-menu>button:hover,.ev-period-menu>button.selected{background:#f1f3f5}
+.ev-period-menu>button.selected{font-weight:600}
+.ev-period-selector summary:focus-visible,.ev-period-menu button:focus-visible{outline:2px solid #91caff;outline-offset:2px}
+.ev-dashboard-context .ev-run-history{margin-left:auto;display:flex;align-items:center;gap:7px}
+.ev-dashboard-context .ev-run-history select{max-width:min(360px,60vw)}
+@container(max-width:600px){.ev-dashboard-grid[data-metric-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}.ev-stat-card{padding:12px}.ev-dashboard-toolbar{align-items:flex-start}.ev-dashboard-context .ev-run-history{flex-wrap:wrap}}
+@container(max-width:450px){.ev-dashboard-grid[data-metric-count="3"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container(max-width:340px){.ev-dashboard-grid{grid-template-columns:1fr}.ev-dashboard-toolbar{flex-wrap:wrap}.ev-dashboard-context .ev-run-history select{max-width:100%}}

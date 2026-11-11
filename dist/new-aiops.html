@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIOps · 运营工作台</title>
+  <link rel="icon" href="aiops/assets/aiops-wordmark.png" />
+  <link rel="stylesheet" href="aiops/vendor/inter.css" />
+  <link rel="stylesheet" href="aiops/shared/tokens.css?v=20261027context2" />
+  <link rel="stylesheet" href="aiops/shared/files.css" />
+  <link rel="stylesheet" href="aiops/shared/overlay-scrollbar.css" />
+  <link rel="stylesheet" href="aiops/shared/popovers-notify.css" />
+  <link rel="stylesheet" href="aiops/shared/agent-turn.css" />
+  <link rel="stylesheet" href="aiops/shared/modal-create-scene.css" />
+  <link rel="stylesheet" href="aiops/workspace-nav.css?v=20261026final1" />
+  <link rel="stylesheet" href="aiops/aiops.css?v=20261028toast-close-center1" />
+  <link rel="stylesheet" href="aiops/analysis-boards.css?v=20261026alert-tags1" />
+  <link rel="stylesheet" href="aiops/capability.css?v=20261028artifact-menu-notes1" />
+  <link rel="stylesheet" href="aiops/session-detail.css?v=20261102completion1" />
+  <link rel="stylesheet" href="aiops/resource-ui.css?v=20261029scenes1">
+  <link rel="stylesheet" href="aiops/layout-columns.css?v=20261027review1">
+  <link rel="stylesheet" href="aiops/shared/composer-slash-skills.css?v=20261027multi1">
+  <link rel="stylesheet" href="aiops/composer-skills.css?v=20261027multi1">
+  <link rel="stylesheet" href="aiops/composer-context.css?v=20261027hint1">
+  <link rel="stylesheet" href="aiops/rail-picker.css?v=20261028footer-select-all1">
+  <link rel="stylesheet" href="aiops/scene-switcher.css?v=20261029top-scene1" />
+  <link rel="stylesheet" href="aiops/integration.css?v=20261029hierarchy1" />
+  <link rel="stylesheet" href="aiops/business-tasks.css?v=20261102completion4" />
+  <link rel="stylesheet" href="aiops/online-evaluators.css?v=20261105filters15" />
+  <link rel="stylesheet" href="workshop-evaluation.css?v=20261109batchActivity1" />
+  <link rel="stylesheet" href="workshop-evaluation-versions.css?v=20261107optimization6" />
+  <link rel="stylesheet" href="workshop-evaluation-dashboard.css?v=20261107optimization6" />
+  <link rel="stylesheet" href="workshop-evaluation-case-input.css?v=20261107optimization6" />
+  <link rel="stylesheet" href="aiops/evaluation.css?v=20261110simplifiedEvals4" />
+  <link rel="stylesheet" href="aiops/page-tabs.css?v=20261106tabs1" />
+  <link rel="stylesheet" href="aiops/unified-evaluation.css?v=20261110memoryDemo2" />
+</head>
+<body class="aiops-body">
+  <div class="aiops-app has-page-tabs">
+    <aside class="aiops-side" aria-label="AI Ops navigation">
+      <!-- Home, scenario switcher, and sidebar toggle -->
+      <div class="aiops-brand-bar">
+        <a class="aiops-home-btn" href="index.html" title="Back to Workbench" aria-label="Back to Workbench">
+          <i data-lucide="house"></i>
+        </a>
+        <button class="brand-picker aiops-scene-picker" id="teamBtn" type="button" data-i18n-aria="切换场景" aria-label="切换场景" aria-haspopup="menu" aria-controls="teamMenu" aria-expanded="false">
+          <span class="brand-picker-label" id="teamName">企业全景</span>
+          <svg class="chev" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 3L4 5.5L6.5 3" stroke="#333" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="ws-btn" id="aiopsNavToggle" aria-label="收起左侧边栏" aria-expanded="true"><svg class="ws-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9 4.5v15"/></svg></button>
+      </div>
+
+      <!-- Primary CTA + navigation -->
+      <div class="aiops-team">
+        <div class="aiops-new-wrap">
+          <button class="btn btn-primary" id="btnNew" type="button" aria-haspopup="menu" aria-expanded="false">
+            <i data-lucide="plus" class="btn-ico" aria-hidden="true"></i>
+            <span data-i18n="新建">新建</span>
+          </button>
+          <div class="aiops-dropdown" id="newMenu" role="menu" hidden>
+            <button type="button" role="menuitem" data-new="分析任务">
+              <i data-lucide="square-pen"></i><span data-i18n="分析任务">分析任务</span>
+            </button>
+            <button type="button" role="menuitem" data-new="定时任务">
+              <i data-lucide="clock"></i><span data-i18n="定时任务">定时任务</span>
+            </button>
+            <button type="button" role="menuitem" data-new="自定义看板">
+              <i data-lucide="layout-grid"></i><span data-i18n="自定义看板">自定义看板</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="aiops-menu-scroll">
+          <nav class="aiops-side-nav" id="aiopsNav" aria-label="AI Ops"></nav>
+        </div>
+      </div>
+
+      <div class="aiops-side-foot">
+        <button class="aiops-user" id="userBtn" type="button" data-i18n-aria="账号菜单" aria-label="账号菜单" aria-haspopup="menu" aria-expanded="false">
+          <span class="user-avatar">F</span>
+          <span class="user-name">Feng Zhu</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="aiops-bell" data-page="消息通知" aria-label="消息通知" title="消息通知"><i data-lucide="bell" aria-hidden="true"></i></button>
+      </div>
+    </aside>
+
+    <div class="aiops-collapsed-nav" id="aiopsCollapsedNav" hidden><a class="ws-btn aiops-collapsed-home" id="aiopsCollapsedHome" href="index.html" aria-label="回到首页" title="回到首页"><svg class="ws-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.9 10.2a1.8 1.8 0 0 1 .638-1.375l6.3-5.399a1.8 1.8 0 0 1 2.324 0l6.3 5.399a1.8 1.8 0 0 1 .638 1.375v8.1a1.8 1.8 0 0 1-1.8 1.8H5.7a1.8 1.8 0 0 1-1.8-1.8Z"/><path d="M14.7 20.1v-7.2a.9.9 0 0 0-.9-.9h-3.6a.9.9 0 0 0-.9.9v7.2"/></svg></a><button type="button" class="ws-btn" id="aiopsNavOpen" aria-label="展开左侧边栏" aria-expanded="false"><svg class="ws-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9 4.5v15"/></svg></button></div>
+    <nav id="aiopsPageTabs" class="aiops-page-tabs" role="tablist" aria-label="已打开的功能"></nav>
+    <div class="aiops-scroll" id="pageRoot" role="main"></div>
+    <aside class="cui-rail resource-panel" id="cuiRail" hidden aria-label="Agent panel">
+      <div class="right-panel-inner">
+        <div class="right-panel-head resource-panel-head">
+          <div class="resource-tabs" id="cuiRailTabs" role="tablist" aria-label="打开的详情"></div>
+          <div class="right-panel-actions resource-panel-actions">
+            <button type="button" class="ws-btn" id="cuiRailMax" aria-label="Expand agent panel" aria-pressed="false">
+              <svg class="ws-ico rail-max-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/><path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/></svg>
+              <svg class="ws-ico rail-min-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M4 9h3a2 2 0 0 0 2-2V4"/><path d="M15 4v3a2 2 0 0 0 2 2h3"/><path d="M20 15h-3a2 2 0 0 0-2 2v3"/><path d="M9 20v-3a2 2 0 0 0-2-2H4"/></svg>
+            </button>
+            <button type="button" class="ws-btn" id="cuiRailClose" aria-label="Close agent panel">
+              <svg class="ws-ico rail-collapse-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M15 4.5v15"/></svg>
+              <svg class="ws-ico rail-close-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="right-panel-body" id="cuiRailBody"></div>
+        <div class="fd-view" id="cuiRailView" hidden>
+          <div class="fd-meta" id="cuiRailMeta"></div>
+          <div class="resource-panel-body" id="cuiRailScroll" role="tabpanel"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Account menu — same chrome as Workbench `#acctMenu` -->
+  <div class="acct-menu" id="acctMenu" role="menu" hidden>
+    <div class="acct-top">
+      <div class="acct-avatar">F</div>
+      <div class="acct-name">Feng Zhu</div>
+      <div class="acct-email">feng.zhu@inspiregroup.com</div>
+    </div>
+    <div class="acct-sep"></div>
+    <div class="acct-sec">
+      <div class="acct-row">
+        <span class="acct-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.8 12.2L4.6 4l2.8 8.2M2.9 9.6h3.4" stroke="#666" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 5h5.2M9 8h5.2M9 11h5.2" stroke="#666" stroke-width="1.1" stroke-linecap="round"/></svg></span>
+        <span class="acct-grow" data-i18n="Language">Language</span>
+        <div class="lang-seg" role="group" data-i18n-aria="Language" aria-label="Language">
+          <button type="button" data-lang="zh" class="is-on">中</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+      </div>
+    </div>
+    <div class="acct-sep"></div>
+    <div class="acct-sec">
+      <button class="acct-item" type="button" role="menuitem" data-admin="enterprise-space.html"><span class="acct-ico"><i data-lucide="building-2"></i></span><span>企业空间</span></button>
+      <button class="acct-item" type="button" role="menuitem" data-admin="enterprise-organization.html"><span class="acct-ico"><i data-lucide="users-round"></i></span><span>企业组织运营</span></button>
+      <button class="acct-item" type="button" role="menuitem">
+        <span class="acct-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.2" r="2.6" stroke="#666" stroke-width="1.1"/><path d="M2.8 13.6c0-2.6 2.3-4.4 5.2-4.4s5.2 1.8 5.2 4.4" stroke="#666" stroke-width="1.1" stroke-linecap="round"/></svg></span>
+        <span data-i18n="Profile">Profile</span>
+      </button>
+      <button class="acct-item" type="button" role="menuitem">
+        <span class="acct-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.2v7.4M5.4 7.2 8 9.8l2.6-2.6" stroke="#666" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.2 11.8h9.6" stroke="#666" stroke-width="1.1" stroke-linecap="round"/></svg></span>
+        <span class="acct-grow" data-i18n="Version update">Version update</span>
+        <span class="acct-dot" aria-label="New"></span>
+      </button>
+      <div class="acct-sep acct-sep-in"></div>
+      <button class="acct-item" type="button" role="menuitem">
+        <span class="acct-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 2.5h3.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9M2.5 8h7M7 5.3L9.7 8 7 10.7" stroke="#333" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span data-i18n="Log out">Log out</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="widgetGallery" class="wg-gallery" hidden></div>
+  <div id="widgetConfigHost" class="wg-config-host" hidden></div>
+
+  <div class="ov-menu" id="teamMenu" role="menu" aria-label="切换场景" hidden></div>
+
+  <div id="overlay" class="evaluation-overlay"></div>
+  <div id="evaluation-toast" class="aev-toast" role="status" aria-live="polite" hidden></div>
+  <script src="aiops/shared/overlay-scrollbar.js"></script>
+  <script src="aiops/vendor/lucide.min.js"></script>
+  <script src="aiops/workspace-nav.js?v=20261105native1"></script>
+  <script src="aiops/analysis-boards.js?v=20261026rolling-data1"></script>
+  <script src="aiops/resource-ui.js?v=20261029hierarchy1"></script>
+  <script src="aiops/layout-columns.js?v=20261027wide-rail1"></script>
+  <script src="aiops/selection-limit.js?v=20261028disabled-picker-rows1"></script>
+  <script src="aiops/capability.js?v=20261106tabs1"></script>
+  <script src="aiops/session-detail.js?v=20261105tasks8"></script>
+  <script src="aiops/shared/composer-slash-skills.js?v=20261028ctrl-hint1"></script>
+  <script src="aiops/shared/file-type-icons.js"></script>
+  <script src="aiops/shared/atomic-catalog.js?v=20261027context2"></script>
+  <script src="aiops/composer-context.js?v=20261028all-sessions-picker1"></script>
+  <script src="aiops/composer-skills.js?v=20261027schedule-inline1"></script>
+  <script src="aiops/rail-picker.js?v=20261028footer-select-all1"></script>
+  <script src="aiops/operations-document.js?v=20261029local-operations2"></script>
+  <script src="aiops/integration.js?v=20261029local-operations2"></script>
+  <script src="aiops/business-tasks.js?v=20261105native1"></script>
+  <script src="aiops/online-evaluators-data.js?v=20261105native1"></script>
+  <script src="aiops/online-evaluators-runtime.js?v=20261105filters15"></script>
+  <script src="aiops/online-evaluators-scheduler.js?v=20261105filters15"></script>
+  <script src="aiops/online-evaluators-filters.js?v=20261105filters15"></script>
+  <script src="aiops/online-evaluators.js?v=20261106tabs1"></script>
+  <script src="aiops/evaluation-foundation.js?v=20261105native1"></script>
+  <script src="workshop-evaluation-seed.js?v=20261107optimization6"></script>
+  <script src="workshop-evaluation.js?v=20261107optimization6"></script>
+  <script src="workshop-evaluation-versions.js?v=20261110caseReference1"></script>
+  <script src="workshop-evaluation-dashboard.js?v=20261109batchValidation1"></script>
+  <script src="workshop-evaluation-tasks.js?v=20261107optimization6"></script>
+  <script src="workshop-evaluation-assets.js?v=20261110caseReference1"></script>
+  <script src="workshop-evaluation-evaluators.js?v=20261108evaluatorPicker1"></script>
+  <script src="workshop-evaluation-experiment-engine.js?v=20261109batchValidation1"></script>
+  <script src="workshop-evaluation-reports.js?v=20261109batchActivity1"></script>
+  <script src="workshop-evaluation-experiments.js?v=20261109batchValidation1"></script>
+  <script src="workshop-evaluation-issues.js?v=20261109batchValidation1"></script>
+  <script src="workshop-evaluation-copilot.js?v=20261107optimization6"></script>
+  <script src="workshop-evaluation-optimization.js?v=20261109batchValidation1"></script>
+  <script src="aiops/evaluation-demo-catalog.js?v=20261110simplifiedEvals4"></script>
+  <script src="aiops/evaluation-demo-runtime.js?v=20261110memoryDemo2"></script>
+  <script src="aiops/evaluation.js?v=20261108unified1"></script>
+  <script src="aiops/evaluation-details.js?v=20261110simplifiedEvals4"></script>
+  <script src="aiops/unified-evaluation-data.js?v=20261110memoryDemo2"></script>
+  <script src="aiops/unified-evaluation-bridge.js?v=20261110memoryDemo2"></script>
+  <script src="aiops/evaluation-demo-online.js?v=20261110memoryDemo2"></script>
+  <script src="aiops/unified-evaluation.js?v=20261110passOrder2"></script>
+  <script src="aiops/page-tabs.js?v=20261108evaluatorPicker1"></script>
+  <script src="aiops/aiops.js?v=20261110memoryDemo2"></script>
+  <script src="aiops/shared/segmented-tabs.js?v=20261027context2"></script>
+</body>
+</html>

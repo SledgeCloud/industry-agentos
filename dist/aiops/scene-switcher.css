@@ -1,0 +1,178 @@
+/* Overview switcher — Workbench popover chrome */
+.ov-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 260px;
+  max-width: min(340px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px));
+  overflow: auto;
+  padding: 0;
+  background: var(--popover-bg);
+  color: var(--text);
+  border: 1px solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  box-shadow: var(--popover-shadow);
+  font-size: var(--popover-font);
+  line-height: 16px;
+}
+.ov-menu[hidden] { display: none !important; }
+
+.ov-menu-sep {
+  height: 1px;
+  background: var(--popover-sep);
+}
+
+.ov-menu-sec {
+  padding: var(--popover-pad);
+}
+
+.ov-menu-sec--scenes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 2px;
+}
+
+.ov-menu-pack + .ov-menu-pack {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--popover-sep);
+}
+
+.ov-menu-children {
+  margin: 2px 0 0 12px;
+  padding-left: 8px;
+  border-left: 1px solid var(--popover-sep);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ov-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--popover-item-h);
+  height: auto;
+  padding: 6px 4px 6px var(--popover-item-pad-x);
+  border: 0;
+  border-radius: var(--popover-item-radius);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--popover-font);
+  text-align: left;
+  cursor: pointer;
+}
+.ov-menu-item:hover { background: var(--hover); }
+.ov-menu-item.is-current { background: var(--selected); }
+
+.ov-menu-item--biz {
+  min-height: 30px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  color: var(--text-soft, #555555);
+  font-size: 12px;
+}
+.ov-menu-item--biz:hover,
+.ov-menu-item--biz.is-current { color: var(--text-primary); }
+
+.ov-menu-kind {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-xs, 6px);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  background: #eceaff;
+  color: #6a54f0;
+}
+.ov-menu-item--biz .ov-menu-kind {
+  background: var(--status-idle-bg, #f4f4f5);
+  color: var(--text-soft, #555555);
+}
+
+.ov-menu-name {
+  flex: 1;
+  min-width: 0;
+  margin-right: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Trailing affordance — pinned to the right edge */
+.ov-menu-trail {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  margin-left: auto;
+}
+
+.ov-menu-enter {
+  display: none;
+  width: 12px;
+  height: 12px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--text-tertiary, #9a9a9a);
+}
+.ov-menu-enter svg { display: block; }
+.ov-menu-item[data-scene]:hover .ov-menu-enter,
+.ov-menu-item[data-scene]:focus-visible .ov-menu-enter {
+  display: block;
+  color: var(--text-primary);
+}
+.ov-menu-item.is-current[data-scene] .ov-menu-enter,
+.ov-menu-item.is-current[data-scene]:hover .ov-menu-enter,
+.ov-menu-item.is-current[data-scene]:focus-visible .ov-menu-enter {
+  display: none;
+}
+
+.ov-menu-check {
+  display: none;
+  width: 12px;
+  height: 12px;
+  color: var(--text-primary);
+}
+.ov-menu-item.is-current .ov-menu-check { display: block; }
+
+/* Overview mode row has no kind chip */
+.ov-menu-item[data-mode="overview"] .ov-menu-kind { display: none; }
+
+.brand-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(100%, 200px);
+  height: 32px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--radius-md, 8px);
+  flex-shrink: 0;
+}
+.brand-picker:hover { background: var(--hover); }
+.brand-picker-label {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand-picker .chev {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+/* Reference label fix and AIOps spacing. */
+.brand-picker-label{line-height:22px;padding-bottom:2px}
+.aiops-brand-bar .aiops-scene-picker{align-self:auto;flex:0 1 auto;min-width:0;max-width:calc(100% - 72px);margin:0}
+.ov-menu-item:focus-visible{outline:2px solid var(--file-blue);outline-offset:-2px}

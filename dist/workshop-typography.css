@@ -1,0 +1,157 @@
+/* Workshop type scale: 11px metadata, 12px content, 13px sections,
+   14px page/dialog titles. Scope includes workshop portals, never other pages. */
+body.studio-mode,
+.scene-selector {
+  --ws-text-caption: 11px;
+  --ws-text-body: 12px;
+  --ws-text-heading: 13px;
+  --ws-text-title: 14px;
+  --text-caption: var(--ws-text-caption);
+  --text-body: var(--ws-text-body);
+  --text-title: var(--ws-text-heading);
+  --text-section: var(--ws-text-title);
+  --text-page: var(--ws-text-title);
+  font-size: var(--ws-text-body);
+  line-height: 1.55;
+}
+
+/* Shell, document navigation, conversation, and shared resource surfaces. */
+body.studio-mode :is(.studio, .wt-screen, .wo-screen, .wa-screen, .ont-screen,
+  .kb-screen, .wb-resource-screen, .wb-resource-detail, .wt-modal, .ont-drawer,
+  .kb-drawer, .kb-modal, .wt-actual-drawer, .wi-card-menu, .kb-menu, .ep-menu) {
+  font-size: var(--ws-text-body);
+  line-height: 1.55;
+}
+body.studio-mode :is(button, input, select, textarea) { font-size: var(--ws-text-body); }
+body.studio-mode :is(.studio-panel-top, .studio-panel-top button, .studio-scene-switch,
+  .studio-home, .studio-user, .studio-doc-tree, .studio-doc-file,
+  .studio-tree-folder summary, .studio-resource summary, .studio-resource-item b,
+  .studio-chat-scroll p, .studio-chat-bubble, .studio-composer textarea,
+  .studio-preview p, .studio-start, .studio-layout-option, .studio-layout-footer, .wo-set-description,
+  .wb-home-option b, .wi-card-menu button, .wi-export-options label, .wi-upload b,
+  .wt-info-text, .wt-assessment, .wt-assessment dd, .wt-assessment p,
+  .wt-execution-run > summary, .wt-execution-block > summary, .wt-execution-block p,
+  .wt-prompt-label, .wt-prompt-editor textarea, .wt-score-label,
+  .kb-card p, .kb-screen button, .kb-drawer button, .kb-menu button) {
+  font-size: var(--ws-text-body);
+}
+body.studio-mode :is(.studio-brand, .studio-brand-home) { font-size: var(--ws-text-title); line-height: 1.4; }
+body.studio-mode .studio-header { height: 48px; }
+body.studio-mode .studio-panel-top { height: 38px; }
+body.studio-mode .studio-doc-file { padding-top: 5px; padding-bottom: 5px; }
+body.studio-mode .studio-chat-scroll p { line-height: 1.75; }
+body.studio-mode .studio-chat-bubble { line-height: 1.7; padding: 10px 12px; }
+body.studio-mode .studio-layout-menu { padding: 18px; }
+body.studio-mode .studio-layout-menu h3 { font-size: var(--ws-text-heading); }
+
+/* Metadata stays one step below content; form labels and tabs stay at 12px. */
+body.studio-mode :is(.beta, .tag, .hint, .id, small, .muted, .studio-breadcrumb,
+  .studio-stages button, .studio-tree-heading, .studio-tree-heading small,
+  .studio-doc-tools button, .studio-compose-foot, .studio-assistant-role,
+  .studio-flow-label, .studio-flow-boxes span, .studio-gui-guide,
+  .studio-gui-guide b, .studio-gui-guide p, .studio-resource-body, .studio-placeholder,
+  .wt-breadcrumb, .wa-breadcrumb, .wt-chip, .wt-status, .wt-release,
+  .wt-card-meta, .wt-field small, .wt-mock-note, .wa-card-meta, .wa-draft, .wa-type,
+  .wa-count, .wo-set-meta, .wo-published, .wb-resource-count, .wi-export-label,
+  .ont-crumb, .ont-badge, .ont-id, .ont-count, .ont-textarea small,
+  .ont-message, .ont-error, .ont-graph-check, .ont-permission-tooltip,
+  .kb-chip, .kb-counter, .kb-retrieval-main > p,
+  .ev-muted, .ev-field small, .ev-note, .ev-total, .ev-chip, .ev-version,
+  .ev-context-pill, .ev-chat-status, .ev-mock-badge, .ev-test-message-label,
+  .ev-test-note, .ev-copilot-note, .ev-skill-chip, .ev-selected-skill code,
+  .ev-copilot-result > span) {
+  font-size: var(--ws-text-caption);
+  line-height: 1.55;
+}
+body.studio-mode :is(.ont-tabs button, .wt-tabs button, .wo-tabs button,
+  .ont-field > span, .wt-field > span, .kb-field > span,
+  .ont-button, .ont-link, .ev-primary, .ev-secondary, .ev-create > summary,
+  .ev-add-menu > summary, .ev-scope-trigger, .ev-form-nav button) {
+  font-size: var(--ws-text-body);
+}
+
+/* Page titles are the deliberate 14px exception; sections and cards use 13px. */
+body.studio-mode :is(.ont-head h2, .wt-page-heading h2, .wt-result-heading h2,
+  .wo-screen h2, .wb-resource-screen h2, .kb-title h2,
+  .ont-drawer > header h2, .wt-modal header b, .kb-drawer > header h2,
+  .kb-drawer > header b, .wt-actual-drawer > header b) {
+  font-size: var(--ws-text-title);
+  line-height: 1.45;
+  font-weight: 600;
+}
+body.studio-mode :is(.ont-section-title h3, .ont-form-section h3,
+  .studio-preview h3, .wb-resource-card h3, .wb-resource-detail h3,
+  .kb-card-heading b, .wa-card-name, .wo-set-head b, .wt-card-heading b,
+  .wt-evaluator-card h3, .wt-assessment h3,
+  .wi-export-name, .ev-copilot-intro h3, .ev-copilot-result h3,
+  .ev-test-welcome h3, .ev-test-agent b, .ev-skill-card b, .ev-copilot-top b,
+  .ev-detail-section h3, .ev-scope-menu h4, .ev-upload-zone > b) {
+  font-size: var(--ws-text-heading);
+  line-height: 1.5;
+  font-weight: 600;
+}
+body.studio-mode :is(.wb-resource-card p, .ev-copilot-intro p,
+  .ev-copilot-result p, .ev-test-message, .ev-test-welcome p,
+  .ev-copilot-form, .ev-natural-composer textarea, .ev-field,
+  .ev-empty h3, .ev-planned h3, .ev-skill-card code) {
+  font-size: var(--ws-text-body);
+  line-height: 1.65;
+}
+body.studio-mode .ev-selected-skill > span { font-size: var(--ws-text-caption); }
+body.studio-mode .ev-natural-composer textarea { line-height: 1.7; }
+
+/* Shared table and form density, including ontology, knowledge, and evaluation. */
+body.studio-mode :is(.ont-table, .wt-table, .kb-screen table, .kb-drawer table),
+body.studio-mode :is(.ont-table, .wt-table, .kb-screen table, .kb-drawer table) :is(th, td) {
+  font-size: var(--ws-text-body);
+  line-height: 1.55;
+}
+body.studio-mode .ont-table :is(th, td) { height: 36px; padding: 7px 12px; }
+body.studio-mode .ont-table th { height: 34px; }
+body.studio-mode .ont-pagination { min-height: 38px; }
+body.studio-mode .ont-pagination button { height: 28px; min-width: 28px; }
+body.studio-mode .ont-head { min-height: 54px; padding-top: 12px; padding-bottom: 12px; }
+body.studio-mode .ont-toolbar { min-height: 42px; }
+body.studio-mode .ont-tabs { gap: 28px; }
+body.studio-mode .ont-tabs button { padding-top: 9px; padding-bottom: 9px; }
+body.studio-mode .ont-drawer > header { height: 52px; }
+body.studio-mode .ont-field { gap: 6px; }
+body.studio-mode .ont-field :is(input:not([type=checkbox]):not([type=radio]), select) { height: 28px; padding-top: 4px; padding-bottom: 4px; }
+body.studio-mode .ont-button { padding: 5px 10px; }
+body.studio-mode .ont-drawer .ont-grid { gap: 18px 20px; }
+body.studio-mode :is(.ont-config, .ont-condition) .ont-table :is(th, td) { height: 34px; padding: 4px 9px; }
+body.studio-mode :is(.ont-config, .ont-condition) :is(input, select) { height: 28px; }
+body.studio-mode .ont-form-section { margin-bottom: 28px; }
+body.studio-mode .ont-form-section h3 { margin-bottom: 18px; }
+body.studio-mode .ont-drawer-nav button { padding-top: 10px; padding-bottom: 10px; }
+body.studio-mode .ev-dimension-row { padding-top: 18px; margin-bottom: 22px; }
+body.studio-mode :is(.kb-screen, .kb-drawer) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select) { min-height: 28px; padding: 5px 9px; }
+body.studio-mode .kb-dark { padding: 5px 10px; }
+body.studio-mode .kb-field { margin-top: 14px; margin-bottom: 14px; }
+body.studio-mode .kb-form-grid { gap: 18px 20px; }
+
+/* Profile controls use an important font shorthand in the shared app stylesheet. */
+body.studio-mode .ep-trigger { font-size: var(--ws-text-body) !important; }
+body.studio-mode .ep-avatar { width: 28px; height: 28px; font-size: var(--ws-text-body); }
+body.studio-mode .ep-menu { font-size: var(--ws-text-body); }
+body.studio-mode .ep-identity small { font-size: var(--ws-text-caption); }
+body.studio-mode .ep-menu a { padding-top: 9px; padding-bottom: 9px; }
+
+/* Entry dialog appears before studio-mode is enabled. */
+.scene-selector .scene-selector-head { padding: 18px 20px; }
+.scene-selector .scene-selector-head h2 { font-size: var(--ws-text-title); line-height: 1.45; }
+.scene-selector .scene-selector-head p { font-size: var(--ws-text-body); }
+.scene-selector .scene-option { padding: 16px; gap: 12px; }
+.scene-selector .scene-option b { font-size: var(--ws-text-heading); }
+.scene-selector .scene-option p { font-size: var(--ws-text-body); line-height: 1.65; margin-top: 7px; }
+.scene-selector :is(.tag, small) { font-size: var(--ws-text-caption); }
+.scene-selector .scene-selector-foot button { font-size: var(--ws-text-body); padding: 7px 16px; }
+
+/* Glyph controls are icons, not content. Preserve readable click targets.
+   SVG diagram text keeps its viewBox geometry; code keeps its aligned 13px layers. */
+body.studio-mode :is(.ont-close, .studio-fullscreen, .ev-copilot-top > button,
+  .wa-card-more, .wo-set-head > button, .wt-card-heading > button) { font-size: 18px; }
+body.studio-mode .wt-modal > header > button { font-size: 18px; }
+body.studio-mode .ont-back { font-size: 20px !important; }
+body.studio-mode :is(.kb-title > button, .wt-result-back) { font-size: 20px; }
+.scene-selector .scene-selector-head > button { font-size: 20px; }
