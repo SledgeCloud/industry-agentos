@@ -23,7 +23,7 @@
   AOS.views.studio = function (el) {
     AOS.setCrumbs([{ name: '智能体工坊' }]);
     const agents = store.state.agents;
-    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>智能体工坊</h1><p>配置提示词、模型和内置工具，调试后发布试用，再正式上线。</p></div><button class="btn primary" id="newAgent">' + icon('plus') + '新建智能体</button></div>' +
+    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>智能体工坊</h1><p>配置提示词、模型和 MCP，调试后发布试用，再正式上线。</p></div><button class="btn primary" id="newAgent">' + icon('plus') + '新建智能体</button></div>' +
       '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>智能体</th><th>分类</th><th>模板</th><th>批次</th><th>状态</th><th>版本</th><th>更新时间</th><th></th></tr></thead><tbody>' +
       agents.map(a => {
         const c = a.draft;
@@ -82,7 +82,7 @@
     function toolRow(t) {
       const on = form.tools.includes(t.id);
       const params = (form.toolParams && form.toolParams[t.id]) || {};
-      return '<div class="tool-pick-row"><label class="check" style="margin-top:2px"><input type="checkbox" data-tool="' + t.id + '"' + (on ? ' checked' : '') + '><span class="sr-only">' + esc(t.name) + '</span></label><div class="info"><div class="name">' + icon(t.icon) + esc(t.name) + '<span class="badge outline">' + GROUP[t.group] + '</span>' + (t.phase > svc.phase() ? '<span class="badge warn">' + svc.PHASE_LABEL[t.phase] + '提供</span>' : '') + '</div><div class="desc">' + esc(t.capability) + '</div>' +
+      return '<div class="tool-pick-row"><label class="check" style="margin-top:2px"><input type="checkbox" data-tool="' + t.id + '"' + (on ? ' checked' : '') + '><span class="sr-only">' + esc(t.name) + '</span></label><div class="info"><div class="name">' + icon(t.icon) + esc(t.name) + '<span class="badge ' + (t.source === 'custom' ? 'info' : 'outline') + '">' + (t.source === 'custom' ? '已安装' : GROUP[t.group]) + '</span>' + (t.phase > svc.phase() ? '<span class="badge warn">' + svc.PHASE_LABEL[t.phase] + '提供</span>' : '') + '</div><div class="desc">' + esc(t.capability) + '</div>' +
         (on ? '<div class="tool-params">' + t.params.map(p => '<div class="field"><label for="tp-' + t.id + '-' + p.key + '">' + esc(p.label) + '</label>' + (p.type === 'select' ? '<select class="select" id="tp-' + t.id + '-' + p.key + '" data-param="' + t.id + '.' + p.key + '">' + p.options.map(o => '<option' + ((params[p.key] || p.default) === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>' : '<input class="input" type="number" min="' + p.min + '" max="' + p.max + '" id="tp-' + t.id + '-' + p.key + '" data-param="' + t.id + '.' + p.key + '" value="' + esc(params[p.key] || p.default) + '">') + '</div>').join('') + '</div>' : '') + '</div></div>';
     }
 
@@ -104,7 +104,7 @@
         '<div class="form-sec"><h3>模型与资料范围</h3><div class="stack"><div class="field"><span class="field-label">开放给用户的模型</span><div class="row">' + P.ZONES.map(z => '<label class="check"><input type="checkbox" data-model="' + z.id + '"' + (form.allowedModels.includes(z.id) ? ' checked' : '') + '>' + z.label + '</label>').join('') + '</div>' + (err.models ? '<span class="err">' + err.models + '</span>' : '<span class="hint">' + (P.isLocked(form) ? '只开放内网模型：用户无法切换到外网模型（锁定内网模型）。' : '用户可在对话中切换；只勾选内网模型即为“锁定内网模型”。') + '</span>') + '</div>' +
         '<div class="grid-2"><div class="field"><span class="field-label">默认模型</span><div class="seg">' + P.ZONES.map(z => '<button data-defmodel="' + z.id + '" class="' + (form.defaultModel === z.id ? 'on' : '') + '"' + (form.allowedModels.includes(z.id) ? '' : ' disabled') + '>' + z.label + '</button>').join('') + '</div></div>' +
         '<div class="field"><span class="field-label">默认资料范围</span><div class="seg">' + P.SCOPES.map(s => '<button data-defscope="' + s.id + '" class="' + (form.defaultScope === s.id ? 'on' : '') + '">' + s.label + '</button>').join('') + '</div></div></div></div></div>' +
-        '<div class="form-sec"><h3>内置工具<span class="muted small" style="font-weight:400">已勾选 ' + form.tools.length + ' 个 · 资料范围决定每轮对话实际可调用的工具</span></h3><div class="tool-pick">' + AOS.data.tools.map(toolRow).join('') + '</div></div>' +
+        '<div class="form-sec"><h3>MCPs<span class="muted small" style="font-weight:400">已勾选 ' + form.tools.length + ' 个 · 资料范围决定每轮对话实际可调用的 MCP</span></h3><div class="tool-pick">' + svc.toolsCatalog().map(toolRow).join('') + '</div></div>' +
         '<div class="form-sec"><h3>开场白与推荐问题</h3><div class="stack"><textarea class="textarea" data-f="opening" aria-label="开场白" style="min-height:60px">' + esc(form.opening) + '</textarea><div class="list-edit">' + form.suggestions.map((s, i) => '<div class="row"><input class="input" data-sugg="' + i + '" value="' + esc(s) + '" aria-label="推荐问题 ' + (i + 1) + '"><button class="btn icon sm ghost" data-delsugg="' + i + '" aria-label="删除">' + icon('trash-2') + '</button></div>').join('') + '<button class="btn sm" id="addSugg" style="align-self:flex-start">' + icon('plus') + '添加推荐问题</button></div></div></div>';
       bindForm();
       ui.icons();
@@ -126,7 +126,7 @@
       formEl.querySelectorAll('[data-defscope]').forEach(b => b.addEventListener('click', () => { form.defaultScope = b.dataset.defscope; touch(); drawForm(); }));
       formEl.querySelectorAll('[data-tool]').forEach(i => i.addEventListener('change', () => {
         const id = i.dataset.tool;
-        form.tools = i.checked ? AOS.data.tools.map(t => t.id).filter(t => t === id || form.tools.includes(t)) : form.tools.filter(t => t !== id);
+        form.tools = i.checked ? svc.toolsCatalog().map(t => t.id).filter(t => t === id || form.tools.includes(t)) : form.tools.filter(t => t !== id);
         touch(); drawForm();
       }));
       formEl.querySelectorAll('[data-param]').forEach(i => i.addEventListener('change', () => {
@@ -201,7 +201,7 @@
     }
 
     function configSummary(c) {
-      return '<dl class="kv"><dt>名称</dt><dd>' + esc(c.name) + '</dd><dt>模型</dt><dd>' + c.allowedModels.map(P.zoneLabel).join('、') + '（默认' + P.zoneLabel(c.defaultModel) + '）</dd><dt>默认资料范围</dt><dd>' + P.scopeLabel(c.defaultScope) + '</dd><dt>内置工具</dt><dd>' + c.tools.map(t => svc.tool(t).name).join('、') + '</dd><dt>提示词</dt><dd>' + esc(c.prompt) + '</dd></dl>';
+      return '<dl class="kv"><dt>名称</dt><dd>' + esc(c.name) + '</dd><dt>模型</dt><dd>' + c.allowedModels.map(P.zoneLabel).join('、') + '（默认' + P.zoneLabel(c.defaultModel) + '）</dd><dt>默认资料范围</dt><dd>' + P.scopeLabel(c.defaultScope) + '</dd><dt>MCPs</dt><dd>' + c.tools.map(t => svc.tool(t).name).join('、') + '</dd><dt>提示词</dt><dd>' + esc(c.prompt) + '</dd></dl>';
     }
 
     function showHistory() {

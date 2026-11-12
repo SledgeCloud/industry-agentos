@@ -38,7 +38,7 @@
     const ra = d.agents.find(a => a.id === 'research-assistant');
     ra.versions[1].config.prompt += ' 回答前提示用户可按工序（高炉、烧结、焦化、球团）缩小检索范围。';
     ra.draft = copy(ra.versions[1].config);
-    state = { settings: { phase: 3, userId: 'u-wang' }, agents: d.agents, docs: d.docs, sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules, seq: 1 };
+    state = { settings: { phase: 3, userId: 'u-wang' }, agents: d.agents, docs: d.docs, sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules, customTools: [], customSkills: [], seq: 1 };
     ensurePhase3();
     d.seedSessions.forEach(s => {
       const agent = state.agents.find(a => a.id === s.agentId);
@@ -59,6 +59,13 @@
   function ensurePhase3() {
     if (!state.settings) state.settings = { userId: 'u-wang' };
     state.settings.phase = 3;
+    if (!Array.isArray(state.customTools)) state.customTools = [];
+    if (!Array.isArray(state.customSkills)) state.customSkills = [];
+    state.customTools.forEach(t => {
+      t.group = 'none';
+      delete t.clearance;
+      delete t.dataScope;
+    });
     (state.agents || []).forEach(a => {
       if (!a.custom && a.batch <= 3 && !(a.versions || []).length) {
         a.versions = [{ id: 'v1.0', status: 'online', createdAt: now(), note: '三期演示上线', trialUsers: [], config: copy(a.draft) }];
@@ -73,7 +80,90 @@
     users,
     currentUser() { return users().find(u => u.id === state.settings.userId) || users()[0]; },
     agent(id) { return state.agents.find(a => a.id === id); },
-    tool(id) { return AOS.data.tools.find(t => t.id === id); },
+    toolsCatalog() {
+      const builtin = (AOS.data.tools || []).map(t => Object.assign({}, t, { source: 'builtin' }));
+      const custom = (state.customTools || []).map(t => Object.assign({}, t, { source: 'custom' }));
+      return builtin.concat(custom);
+    },
+    tool(id) { return svc.toolsCatalog().find(t => t.id === id); },
+    skillsCatalog() {
+      const builtin = (AOS.data.skills || []).map(s => Object.assign({}, s, { source: 'builtin' }));
+      const custom = (state.customSkills || []).map(s => Object.assign({}, s, { source: 'custom' }));
+      return builtin.concat(custom);
+    },
+    skill(id) { return svc.skillsCatalog().find(s => s.id === id); },
+    installTool(tool) {
+      if (!tool || !tool.id || !tool.name) return { ok: false, reason: '请填写 MCP 名称与标识' };
+      if (svc.tool(tool.id)) return { ok: false, reason: '该 MCP 标识已存在：' + tool.id };
+      const item = Object.assign({
+        icon: 'wrench', group: 'none', phase: 3, appliesTo: '自定义', ingest: '无', capability: '',
+        params: [], safety: ['用户自行安装，调用结果写入会话与审计'], endpoint: '', installedAt: now(), installedBy: svc.currentUser().name
+      }, tool, { source: 'custom', group: 'none' });
+      state.customTools.push(item);
+      store.save();
+      return { ok: true, item };
+    },
+    updateTool(id, patch) {
+      const item = (state.customTools || []).find(t => t.id === id);
+      if (!item) return { ok: false, reason: '只能修改自行安装的 MCP' };
+      if (!patch || !patch.name) return { ok: false, reason: '请填写 MCP 名称' };
+      Object.assign(item, {
+        name: patch.name,
+        icon: patch.icon || item.icon,
+        endpoint: patch.endpoint != null ? patch.endpoint : item.endpoint,
+        appliesTo: patch.appliesTo || item.appliesTo,
+        capability: patch.capability || item.capability,
+        group: 'none',
+        updatedAt: now()
+      });
+      store.save();
+      return { ok: true, item };
+    },
+    uninstallTool(id) {
+      const i = (state.customTools || []).findIndex(t => t.id === id);
+      if (i < 0) return { ok: false, reason: '只能卸载自行安装的 MCP' };
+      state.customTools.splice(i, 1);
+      state.agents.forEach(a => {
+        if (a.draft && Array.isArray(a.draft.tools)) a.draft.tools = a.draft.tools.filter(t => t !== id);
+        (a.versions || []).forEach(v => { if (v.config && Array.isArray(v.config.tools)) v.config.tools = v.config.tools.filter(t => t !== id); });
+      });
+      store.save();
+      return { ok: true };
+    },
+    installSkill(skill) {
+      if (!skill || !skill.id || !skill.name) return { ok: false, reason: '请填写 Skill 名称与标识' };
+      if (svc.skill(skill.id)) return { ok: false, reason: '该 Skill 标识已存在：' + skill.id };
+      const item = Object.assign({
+        icon: 'sparkles', category: '自定义', desc: '', trigger: '通用', status: 'published',
+        installedAt: now(), installedBy: svc.currentUser().name
+      }, skill, { source: 'custom' });
+      state.customSkills.push(item);
+      store.save();
+      return { ok: true, item };
+    },
+    updateSkill(id, patch) {
+      const item = (state.customSkills || []).find(s => s.id === id);
+      if (!item) return { ok: false, reason: '只能修改自行安装的 Skill' };
+      if (!patch || !patch.name) return { ok: false, reason: '请填写 Skill 名称' };
+      Object.assign(item, {
+        name: patch.name,
+        icon: patch.icon || item.icon,
+        category: patch.category || item.category,
+        trigger: patch.trigger || item.trigger,
+        desc: patch.desc || item.desc,
+        status: patch.status || item.status || 'published',
+        updatedAt: now()
+      });
+      store.save();
+      return { ok: true, item };
+    },
+    uninstallSkill(id) {
+      const i = (state.customSkills || []).findIndex(s => s.id === id);
+      if (i < 0) return { ok: false, reason: '只能卸载自行安装的 Skill' };
+      state.customSkills.splice(i, 1);
+      store.save();
+      return { ok: true };
+    },
     category(id) { return AOS.data.categories.find(c => c.id === id) || { id, name: '未分类', icon: 'box' }; },
     phase() { return 3; },
     PHASE_LABEL: ['', '一期', '二期', '三期'],
@@ -113,7 +203,7 @@
       const model = svc.modelFor(opts.zone);
       return E.respond({
         agent: config, text, zone: opts.zone, scope: opts.scope, mode: opts.mode || 'chat', user, policy: state.policy,
-        docs: state.docs, web: AOS.data.web, toolsCatalog: AOS.data.tools, phase: svc.phase(),
+        docs: state.docs, web: AOS.data.web, toolsCatalog: svc.toolsCatalog(), phase: svc.phase(),
         modelName: model ? model.name : null, state: session.flowState ? copy(session.flowState) : null, now: opts.now
       });
     },
@@ -296,7 +386,7 @@
     const revealed = opts.revealed === undefined ? steps.length : opts.revealed;
     const shown = steps.slice(0, Math.min(steps.length, revealed + 1));
     const running = revealed < steps.length;
-    return '<details class="steps"' + (opts.expand || running ? ' open' : '') + '><summary>' + icon('chevron-right', 'chev') + (running ? '正在调用工具…' : '调用了 ' + steps.length + ' 次内置工具 · ' + (total / 1000).toFixed(1) + ' 秒') + '</summary>' +
+    return '<details class="steps"' + (opts.expand || running ? ' open' : '') + '><summary>' + icon('chevron-right', 'chev') + (running ? '正在调用 MCP…' : '调用了 ' + steps.length + ' 次 MCP · ' + (total / 1000).toFixed(1) + ' 秒') + '</summary>' +
       shown.map((s, i) => {
         const isRun = running && i === revealed;
         const st = isRun ? 'running' : s.status;

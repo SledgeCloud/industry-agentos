@@ -41,7 +41,7 @@
       ui.icons();
     }
 
-    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>知识库</h1><p>资料入库后由对应内置工具自动解析和索引；智能体只能通过内置工具检索，并按权限和密级过滤。</p></div><button class="btn primary" id="uploadBtn">' + icon('upload') + '上传资料</button></div>' +
+    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>知识库</h1><p>资料入库后由对应 MCP 自动解析和索引；智能体只能通过 MCP 检索，并按权限和密级过滤。</p></div><button class="btn primary" id="uploadBtn">' + icon('upload') + '上传资料</button></div>' +
       '<div class="tabs" id="kTabs" role="tablist"></div><div id="kHidden"></div>' +
       '<div class="toolbar"><label class="search"><span class="sr-only">搜索资料</span>' + icon('search') + '<input class="input" id="kQ" placeholder="搜索名称、课题、作者或图号" value="' + esc(f.q) + '"></label>' +
       '<select class="select" id="kProc" aria-label="工序"><option value="">全部工序</option>' + PROCESSES.map(p => '<option' + (f.process === p ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>' +

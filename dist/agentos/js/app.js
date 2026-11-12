@@ -7,7 +7,11 @@
 
   const NAV = [
     { label: '使用', items: [{ id: 'portal', name: '智能体广场', icon: 'layout-grid', href: '#/' }] },
-    { label: '生产', items: [{ id: 'studio', name: '智能体工坊', icon: 'boxes', href: '#/studio' }, { id: 'tools', name: '内置工具', icon: 'wrench', href: '#/tools' }] },
+    { label: '生产', items: [
+      { id: 'studio', name: '智能体工坊', icon: 'boxes', href: '#/studio' },
+      { id: 'mcps', name: 'MCPs', icon: 'wrench', href: '#/mcps' },
+      { id: 'skills', name: 'Skills', icon: 'sparkles', href: '#/skills' }
+    ] },
     { label: '资料', items: [{ id: 'knowledge', name: '知识库', icon: 'library', href: '#/knowledge' }] },
     { label: '运营', items: [{ id: 'sessions', name: '会话记录', icon: 'history', href: '#/sessions' }] },
     { label: '管理', items: [
@@ -24,7 +28,8 @@
     if (!a) return { view: 'portal', nav: 'portal' };
     if (a === 'chat') return { view: 'chat', nav: 'portal', agentId: b, sessionId: c };
     if (a === 'studio') return b ? { view: 'studioEdit', nav: 'studio', agentId: b } : { view: 'studio', nav: 'studio' };
-    if (a === 'tools') return { view: 'tools', nav: 'tools' };
+    if (a === 'mcps' || a === 'tools') return { view: 'mcps', nav: 'mcps' };
+    if (a === 'skills') return { view: 'skills', nav: 'skills' };
     if (a === 'knowledge') return { view: 'knowledge', nav: 'knowledge' };
     if (a === 'sessions') return b ? { view: 'sessionDetail', nav: 'sessions', sessionId: b } : { view: 'sessions', nav: 'sessions' };
     if (a === 'admin') return { view: b || 'policy', nav: b || 'policy' };
@@ -35,18 +40,29 @@
     return (u.id.replace(/^u-/, '') + '@ironworks.demo');
   }
 
-  function switchUser(id) {
+  function switchUser(id, keepMenu) {
     if (!svc.users().some(u => u.id === id)) return;
     store.state.settings.userId = id;
     store.save();
     const u = svc.currentUser();
     ui.toast('已切换为 ' + u.name + '（' + u.dept + '）');
-    closeTopPopovers();
-    render();
+    if (keepMenu) {
+      closeAcctSwitch();
+      paintAcctMenu();
+      render();
+      const menu = document.getElementById('acctMenu');
+      const btn = document.getElementById('userBtn');
+      if (menu && btn) {
+        menu.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    } else {
+      closeTopPopovers();
+      render();
+    }
   }
-  AOS.switchUser = switchUser;
+  AOS.switchUser = function (id) { switchUser(id, false); };
 
-  let acctPanel = 'main';
   const NOTICES = [
     { id: 'n1', title: '定时运行完成', body: '「每周烧结技术动态」已生成会话，已推送给订阅人。', time: '10 分钟前', href: '#/admin/schedules', unread: true, icon: 'calendar-clock' },
     { id: 'n2', title: '出网请求已拦截', body: '李敏 使用外网模型时，秘密级资料「高炉富氢喷吹工业试验方案」被出口网关拦截。', time: '1 小时前', href: '#/admin/audit', unread: true, icon: 'shield-alert' },
@@ -57,12 +73,19 @@
 
   function unreadCount() { return NOTICES.filter(n => n.unread).length; }
 
+  function closeAcctSwitch() {
+    const panel = document.getElementById('acctSwitch');
+    if (panel) panel.hidden = true;
+    const item = document.querySelector('#acctMenu [data-acct-switch]');
+    if (item) item.classList.remove('is-on');
+  }
+
   function closeAcctMenu() {
     const menu = document.getElementById('acctMenu');
     const btn = document.getElementById('userBtn');
     if (menu) menu.hidden = true;
     if (btn) btn.setAttribute('aria-expanded', 'false');
-    acctPanel = 'main';
+    closeAcctSwitch();
   }
 
   function closeNotifyPanel() {
@@ -125,34 +148,70 @@
     const menu = document.getElementById('acctMenu');
     if (!menu) return;
     const user = svc.currentUser();
-    if (acctPanel === 'accounts') {
-      menu.innerHTML =
-        '<div class="acct-sec acct-switch-head"><button type="button" class="acct-item" data-acct-back>' + icon('chevron-left') + '<span>切换账号</span></button></div>' +
-        '<div class="acct-sep"></div>' +
-        '<div class="acct-sec">' + svc.users().map(u =>
-          '<button type="button" class="acct-item acct-user' + (u.id === user.id ? ' is-current' : '') + '" role="menuitem" data-switch="' + u.id + '">' +
-          '<span class="avatar' + (u.id === user.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' +
-          '<span class="acct-user-meta"><span class="acct-user-name">' + esc(u.name) + '</span><span class="acct-user-sub">' + esc(u.title + ' · ' + u.dept + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</span></span>' +
-          (u.id === user.id ? icon('check') : '') +
-          '</button>'
-        ).join('') + '</div>';
-    } else {
-      menu.innerHTML =
-        '<div class="acct-top"><div class="acct-avatar" id="acctAvatar">' + esc(user.name.slice(0, 1)) + '</div><div class="acct-name" id="acctName">' + esc(user.name) + '</div><div class="acct-email" id="acctEmail">' + esc(userEmail(user)) + '</div></div>' +
-        '<div class="acct-sep"></div>' +
-        '<div class="acct-sec"><div class="acct-row"><span class="acct-ico">' + icon('languages') + '</span><span class="acct-grow">选择语言</span><div class="lang-seg" role="group" aria-label="选择语言"><button type="button" data-lang="zh" class="is-on">中</button><button type="button" data-lang="en">EN</button></div></div></div>' +
-        '<div class="acct-sep"></div>' +
-        '<div class="acct-sec">' +
-        '<button class="acct-item" type="button" role="menuitem" data-demo="space">' + icon('building-2') + '<span>企业空间</span></button>' +
-        '<button class="acct-item" type="button" role="menuitem" data-demo="org">' + icon('users-round') + '<span>企业组织运营</span></button>' +
-        '<button class="acct-item" type="button" role="menuitem" data-demo="profile">' + icon('circle-user') + '<span>个人资料</span></button>' +
-        '<button class="acct-item" type="button" role="menuitem" data-demo="version">' + icon('download') + '<span class="acct-grow">版本更新</span><span class="acct-dot" aria-label="有更新"></span></button>' +
-        '<button class="acct-item" type="button" role="menuitem" data-acct-switch>' + icon('arrow-left-right') + '<span>切换账号</span></button>' +
-        '<div class="acct-sep acct-sep-in"></div>' +
-        '<button class="acct-item" type="button" role="menuitem" data-demo="logout">' + icon('log-out') + '<span>退出登录</span></button>' +
-        '</div>';
-    }
+    const switchOpen = document.getElementById('acctSwitch') && !document.getElementById('acctSwitch').hidden;
+    menu.innerHTML =
+      '<div class="acct-top"><div class="acct-avatar" id="acctAvatar">' + esc(user.name.slice(0, 1)) + '</div><div class="acct-name" id="acctName">' + esc(user.name) + '</div><div class="acct-email" id="acctEmail">' + esc(userEmail(user)) + '</div></div>' +
+      '<div class="acct-sep"></div>' +
+      '<div class="acct-sec"><div class="acct-row"><span class="acct-ico">' + icon('languages') + '</span><span class="acct-grow">选择语言</span><div class="lang-seg" role="group" aria-label="选择语言"><button type="button" data-lang="zh" class="is-on">中</button><button type="button" data-lang="en">EN</button></div></div></div>' +
+      '<div class="acct-sep"></div>' +
+      '<div class="acct-sec">' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="space">' + icon('building-2') + '<span>企业空间</span></button>' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="org">' + icon('users-round') + '<span>企业组织运营</span></button>' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="profile">' + icon('circle-user') + '<span>个人资料</span></button>' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="version">' + icon('download') + '<span class="acct-grow">版本更新</span><span class="acct-dot" aria-label="有更新"></span></button>' +
+      '<button class="acct-item' + (switchOpen ? ' is-on' : '') + '" type="button" role="menuitem" data-acct-switch aria-haspopup="menu" aria-expanded="' + (switchOpen ? 'true' : 'false') + '">' + icon('arrow-left-right') + '<span class="acct-grow">切换账号</span>' + icon('chevron-right') + '</button>' +
+      '<div class="acct-sep acct-sep-in"></div>' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="logout">' + icon('log-out') + '<span>退出登录</span></button>' +
+      '</div>';
     ui.icons();
+  }
+
+  function paintAcctSwitch() {
+    const panel = document.getElementById('acctSwitch');
+    if (!panel) return;
+    const user = svc.currentUser();
+    panel.innerHTML =
+      '<div class="acct-sec"><div class="acct-switch-title">切换账号</div></div>' +
+      '<div class="acct-sep"></div>' +
+      '<div class="acct-sec">' + svc.users().map(u =>
+        '<button type="button" class="acct-item acct-user' + (u.id === user.id ? ' is-current' : '') + '" role="menuitem" data-switch="' + u.id + '">' +
+        '<span class="avatar' + (u.id === user.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' +
+        '<span class="acct-user-meta"><span class="acct-user-name">' + esc(u.name) + '</span><span class="acct-user-sub">' + esc(u.title + ' · ' + u.dept + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</span></span>' +
+        (u.id === user.id ? icon('check') : '') +
+        '</button>'
+      ).join('') + '</div>';
+    ui.icons();
+  }
+
+  function positionAcctSwitch() {
+    const menu = document.getElementById('acctMenu');
+    const panel = document.getElementById('acctSwitch');
+    if (!menu || !panel || panel.hidden || menu.hidden) return;
+    const mr = menu.getBoundingClientRect();
+    const gap = 8;
+    const width = panel.offsetWidth || 300;
+    let left = mr.left - width - gap;
+    if (left < 8) left = 8;
+    panel.style.top = Math.round(mr.top) + 'px';
+    panel.style.left = Math.round(left) + 'px';
+    panel.style.right = 'auto';
+  }
+
+  function openAcctSwitch() {
+    const panel = document.getElementById('acctSwitch');
+    const menu = document.getElementById('acctMenu');
+    if (!panel || !menu || menu.hidden) return;
+    paintAcctSwitch();
+    panel.hidden = false;
+    paintAcctMenu();
+    positionAcctSwitch();
+  }
+
+  function toggleAcctSwitch() {
+    const panel = document.getElementById('acctSwitch');
+    if (!panel) return;
+    if (panel.hidden) openAcctSwitch();
+    else { closeAcctSwitch(); paintAcctMenu(); }
   }
 
   function openAcctMenu() {
@@ -160,7 +219,7 @@
     const menu = document.getElementById('acctMenu');
     const btn = document.getElementById('userBtn');
     if (!menu || !btn) return;
-    acctPanel = 'main';
+    closeAcctSwitch();
     paintAcctMenu();
     menu.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
@@ -180,6 +239,7 @@
       '<div class="user-menu"><button class="user-trigger" id="userBtn" type="button" aria-label="账号菜单" aria-haspopup="menu" aria-expanded="false"><span class="avatar" id="userAvatar"></span></button></div>' +
       '</div></header><main class="view" id="view" tabindex="-1"></main></div></div>' +
       '<div class="acct-menu" id="acctMenu" role="menu" hidden></div>' +
+      '<div class="acct-menu acct-switch-panel" id="acctSwitch" role="menu" aria-label="切换账号" hidden></div>' +
       '<div class="notify-panel" id="notifyPanel" role="dialog" aria-label="消息通知" hidden></div>';
 
     document.getElementById('notifyBtn').addEventListener('click', e => {
@@ -211,11 +271,9 @@
     });
     document.getElementById('acctMenu').addEventListener('click', e => {
       e.stopPropagation();
-      const t = e.target.closest('[data-acct-switch],[data-acct-back],[data-switch],[data-demo],[data-lang]');
+      const t = e.target.closest('[data-acct-switch],[data-demo],[data-lang]');
       if (!t) return;
-      if (t.dataset.acctSwitch !== undefined) { acctPanel = 'accounts'; paintAcctMenu(); return; }
-      if (t.dataset.acctBack !== undefined) { acctPanel = 'main'; paintAcctMenu(); return; }
-      if (t.dataset.switch) { switchUser(t.dataset.switch); return; }
+      if (t.dataset.acctSwitch !== undefined) { toggleAcctSwitch(); return; }
       if (t.dataset.lang) {
         t.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
         if (t.dataset.lang === 'en') ui.toast('演示环境暂仅提供中文');
@@ -227,8 +285,17 @@
       if (demo === 'logout') { ui.toast('演示环境无需退出登录'); return; }
       ui.toast('演示环境暂未接入该功能');
     });
+    document.getElementById('acctSwitch').addEventListener('click', e => {
+      e.stopPropagation();
+      const t = e.target.closest('[data-switch]');
+      if (t && t.dataset.switch) switchUser(t.dataset.switch, true);
+    });
     document.addEventListener('click', closeTopPopovers);
-    window.addEventListener('resize', closeTopPopovers);
+    window.addEventListener('resize', () => {
+      const menu = document.getElementById('acctMenu');
+      if (menu && !menu.hidden) positionAcctSwitch();
+      else closeTopPopovers();
+    });
     window.addEventListener('hashchange', closeTopPopovers);
     paintNotifyBadge();
     ui.icons();

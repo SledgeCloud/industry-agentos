@@ -351,5 +351,49 @@
     { agentId: 'research-assistant', userId: 'u-zhang', zone: 'external', scope: 'internal', at: '2026-11-05 11:18', prompts: ['低碳炼铁技术路线的近期重点是什么？'], feedback: {} }
   ];
 
-  AOS.data = { users, orgs, categories, tools, agents, docs, web, models, policy, schedules, seedSessions };
+  const skills = [
+    { id: 'cite-first', name: '先引用后结论', icon: 'quote', category: '回答规范', desc: '回答前先检索并标注引用编号，结论必须对应可核验来源；无来源时明确说明。', trigger: '问答、查新、诊断类智能体', status: 'published' },
+    { id: 'clearance-guard', name: '密级出网护栏', icon: 'shield-check', category: '安全合规', desc: '外网模型场景下再次核对资料密级与部门出网策略，拦截秘密及以上内容并给出可改用内网模型的提示。', trigger: '所有开放外网模型的智能体', status: 'published' },
+    { id: 'process-scope', name: '工序范围收窄', icon: 'filter', category: '检索策略', desc: '先确认高炉 / 烧结 / 焦化 / 球团等工序，再缩小检索范围，避免跨工序混用结论。', trigger: '科研资料助手、工艺诊断', status: 'published' },
+    { id: 'outline-confirm', name: '大纲确认再撰写', icon: 'list-tree', category: '报告流程', desc: '报告类任务先给出可勾选大纲，用户确认后再分章节检索与撰写，并支持导出。', trigger: '调研报告、申报书、交底书', status: 'published' },
+    { id: 'novelty-two-pass', name: '查新双阶段', icon: 'search-check', category: '报告流程', desc: '先做厂内课题库与公开文献初检，确认范围后再生成查新结论与对比表。', trigger: '立项查新助手', status: 'published' },
+    { id: 'intel-window', name: '情报时间窗', icon: 'calendar-range', category: '检索策略', desc: '按用户指定的时间窗口过滤公开情报与网页结果，并在简报中标注时间覆盖范围。', trigger: '技术情报简报助手', status: 'published' },
+    { id: 'diagnosis-chain', name: '异常排查链', icon: 'git-branch', category: '研发方法', desc: '按现象 → 可能原因 → 历史案例 → 数据核对 → 建议措施组织回答，避免直接给拍脑袋结论。', trigger: '工艺问题诊断助手', status: 'published' },
+    { id: 'analysis-chart', name: '指标对照作图', icon: 'chart-line', category: '数据分析', desc: '在数据查询结果上选择对比指标，生成趋势说明与简易对照图，并提示数据只读。', trigger: '试验数据分析助手', status: 'published' }
+  ];
+
+  const mcpMarket = [
+    {
+      id: 'std_query_api', name: '标准规范接口', icon: 'scale', group: 'internal', phase: 3, appliesTo: '标准库 API',
+      ingest: '通过厂内标准系统只读接口同步目录与条款元数据',
+      capability: '按标准编号、名称和关键词查询条款摘要',
+      params: [{ key: 'topK', label: '返回条数', type: 'number', min: 1, max: 20, default: 5 }],
+      safety: ['只读接口，凭证由平台托管', '结果按用户密级过滤'],
+      endpoint: 'mcp://ironworks.local/std-query'
+    },
+    {
+      id: 'rms_task', name: '科研任务读写', icon: 'clipboard-list', group: 'internal', phase: 3, appliesTo: '科研管理系统',
+      ingest: '无；实时调用 RMS',
+      capability: '查询课题进度、里程碑和负责人；演示环境仅模拟只读查询',
+      params: [{ key: 'maxRows', label: '最大返回行数', type: 'number', min: 10, max: 200, default: 50 }],
+      safety: ['演示仅开放只读动作', '写入类动作需另行审批'],
+      endpoint: 'mcp://ironworks.local/rms'
+    },
+    {
+      id: 'patent_search', name: '专利检索', icon: 'lightbulb', group: 'public', phase: 3, appliesTo: '公开专利库',
+      ingest: '无',
+      capability: '按技术主题检索公开专利摘要与申请号',
+      params: [{ key: 'topK', label: '返回条数', type: 'number', min: 1, max: 20, default: 8 }],
+      safety: ['只发送检索关键词', '经出口网关审计'],
+      endpoint: 'mcp://public/patent-search'
+    }
+  ];
+
+  const skillMarket = [
+    { id: 'table-answer', name: '表格化作答', icon: 'table', category: '回答规范', desc: '对比类问题优先输出 Markdown 表格，并在表下给出简要结论。', trigger: '调研、查新、数据分析', status: 'published' },
+    { id: 'unit-check', name: '冶金单位校对', icon: 'ruler', category: '研发方法', desc: '输出焦比、煤比、风温等指标时核对单位与常见量级，异常时提醒复核。', trigger: '试验分析、工艺诊断', status: 'published' },
+    { id: 'meeting-minutes', name: '技术例会纪要', icon: 'notebook-pen', category: '报告流程', desc: '将讨论要点整理为决议、待办与负责人三栏纪要。', trigger: '工作流型智能体', status: 'published' }
+  ];
+
+  AOS.data = { users, orgs, categories, tools, skills, mcpMarket, skillMarket, agents, docs, web, models, policy, schedules, seedSessions };
 })(typeof window !== 'undefined' ? window : globalThis);

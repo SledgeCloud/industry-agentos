@@ -18,7 +18,7 @@
     return '<article class="agent-card' + (a.core ? ' core' : '') + (st === 'planned' ? ' planned' : '') + '">' +
       '<div class="agent-top"><div class="agent-icon">' + icon(cfg.icon || a.icon) + '</div><div class="grow"><div class="agent-name">' + esc(cfg.name) + '</div><div class="agent-meta">' + ui.status(st) + (a.core ? '<span class="badge dark">核心场景</span>' : '') + (P.isLocked(cfg) ? '<span class="badge">' + icon('lock') + '锁定内网模型</span>' : '') + (verLabel ? '<span class="badge outline">' + esc(verLabel) + '</span>' : '') + '</div></div></div>' +
       '<p class="agent-desc">' + esc(cfg.desc) + '</p>' +
-      '<div class="agent-foot"><div class="tool-icons" aria-label="勾选的内置工具">' + tools.map(t => '<span class="' + (t.phase > svc.phase() ? 'off' : '') + '" title="' + esc(t.name + (t.phase > svc.phase() ? '（' + svc.PHASE_LABEL[t.phase] + '提供）' : '')) + '">' + icon(t.icon) + '</span>').join('') + '</div>' + action + '</div>' +
+      '<div class="agent-foot"><div class="tool-icons" aria-label="勾选的 MCP">' + tools.map(t => '<span class="' + (t.phase > svc.phase() ? 'off' : '') + '" title="' + esc(t.name + (t.phase > svc.phase() ? '（' + svc.PHASE_LABEL[t.phase] + '提供）' : '')) + '">' + icon(t.icon) + '</span>').join('') + '</div>' + action + '</div>' +
       '</article>';
   }
 
