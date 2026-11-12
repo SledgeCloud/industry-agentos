@@ -92,10 +92,10 @@
       const vs = agent.versions || [];
       formEl.innerHTML = '<div class="studio-bar"><div class="agent-icon" style="width:28px;height:28px;border-radius:7px">' + icon(form.icon) + '</div><div class="grow"><h2>' + esc(form.name || '未命名') + '</h2><div class="row small muted">' + ui.status(st) + '<span>' + esc(versionSummary(agent)) + '</span>' + (dirty ? '<span class="badge warn">有未保存的修改</span>' : '') + '</div></div>' +
         '<button class="btn sm" id="histBtn">' + icon('history') + '版本历史</button><button class="btn sm" id="saveBtn">保存草稿</button>' +
-        '<button class="btn sm" id="trialBtn"' + (planned() ? ' disabled title="计划在' + svc.PHASE_LABEL[agent.batch] + '上线，可在演示设置中切换阶段"' : '') + '>发布试用</button>' +
+        '<button class="btn sm" id="trialBtn"' + (planned() ? ' disabled title="计划在' + svc.PHASE_LABEL[agent.batch] + '上线"' : '') + '>发布试用</button>' +
         '<button class="btn sm primary" id="onlineBtn"' + (planned() ? ' disabled' : '') + '>上线</button>' +
         (vs.some(v => v.status === 'online') ? '<button class="btn sm ghost danger" id="offBtn">下线</button>' : '') + '</div>' +
-        (planned() ? '<div class="form-sec" style="padding-bottom:0"><div class="note info">' + icon('calendar-clock') + '<span>该智能体计划在' + svc.PHASE_LABEL[agent.batch] + '上线。可以先完成配置和调试；切换演示阶段后即可发布。</span></div></div>' : '') +
+        (planned() ? '<div class="form-sec" style="padding-bottom:0"><div class="note info">' + icon('calendar-clock') + '<span>该智能体计划在' + svc.PHASE_LABEL[agent.batch] + '上线。可以先完成配置和调试。</span></div></div>' : '') +
         '<div class="form-sec"><h3>基本信息</h3><div class="stack"><div class="grid-2"><div class="field"><label for="fName">名称</label><input class="input" id="fName" data-f="name" value="' + esc(form.name) + '">' + (err.name ? '<span class="err">' + err.name + '</span>' : '') + '</div>' +
         '<div class="field"><label for="fCat">分类</label><select class="select" id="fCat" data-f="category">' + AOS.data.categories.map(c => '<option value="' + c.id + '"' + (c.id === form.category ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></div></div>' +
         '<div class="field"><label for="fDesc">描述</label><input class="input" id="fDesc" data-f="desc" value="' + esc(form.desc) + '"></div>' +

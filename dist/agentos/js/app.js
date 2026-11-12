@@ -14,8 +14,7 @@
       { id: 'policy', name: '出网策略', icon: 'shield-check', href: '#/admin/policy' },
       { id: 'models', name: '模型网关', icon: 'server', href: '#/admin/models' },
       { id: 'audit', name: '审计日志', icon: 'scroll-text', href: '#/admin/audit' },
-      { id: 'schedules', name: '定时运行', icon: 'calendar-clock', href: '#/admin/schedules' },
-      { id: 'settings', name: '演示设置', icon: 'settings', href: '#/admin/settings' }
+      { id: 'schedules', name: '定时运行', icon: 'calendar-clock', href: '#/admin/schedules' }
     ] }
   ];
 
@@ -28,25 +27,211 @@
     if (a === 'tools') return { view: 'tools', nav: 'tools' };
     if (a === 'knowledge') return { view: 'knowledge', nav: 'knowledge' };
     if (a === 'sessions') return b ? { view: 'sessionDetail', nav: 'sessions', sessionId: b } : { view: 'sessions', nav: 'sessions' };
-    if (a === 'admin') return { view: b || 'settings', nav: b || 'settings' };
+    if (a === 'admin') return { view: b || 'policy', nav: b || 'policy' };
     return { view: 'portal', nav: 'portal' };
   }
 
-  function shell() {
+  function userEmail(u) {
+    return (u.id.replace(/^u-/, '') + '@ironworks.demo');
+  }
+
+  function switchUser(id) {
+    if (!svc.users().some(u => u.id === id)) return;
+    store.state.settings.userId = id;
+    store.save();
+    const u = svc.currentUser();
+    ui.toast('已切换为 ' + u.name + '（' + u.dept + '）');
+    closeTopPopovers();
+    render();
+  }
+  AOS.switchUser = switchUser;
+
+  let acctPanel = 'main';
+  const NOTICES = [
+    { id: 'n1', title: '定时运行完成', body: '「每周烧结技术动态」已生成会话，已推送给订阅人。', time: '10 分钟前', href: '#/admin/schedules', unread: true, icon: 'calendar-clock' },
+    { id: 'n2', title: '出网请求已拦截', body: '李敏 使用外网模型时，秘密级资料「高炉富氢喷吹工业试验方案」被出口网关拦截。', time: '1 小时前', href: '#/admin/audit', unread: true, icon: 'shield-alert' },
+    { id: 'n3', title: '智能体已上线', body: '试验数据分析助手 v1.0 已按三期计划上线，可在智能体广场使用。', time: '昨天', href: '#/', unread: true, icon: 'rocket' },
+    { id: 'n4', title: '模型网关限流提醒', body: 'Qwen3-72B-Instruct 近 1 小时调用接近 QPM 上限，请关注高峰时段。', time: '昨天', href: '#/admin/models', unread: false, icon: 'server' },
+    { id: 'n5', title: '资料解析完成', body: '「2号高炉低硅冶炼技术攻关总结报告」已完成解析，可被文档检索使用。', time: '2 天前', href: '#/knowledge', unread: false, icon: 'file-check' }
+  ];
+
+  function unreadCount() { return NOTICES.filter(n => n.unread).length; }
+
+  function closeAcctMenu() {
+    const menu = document.getElementById('acctMenu');
+    const btn = document.getElementById('userBtn');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    acctPanel = 'main';
+  }
+
+  function closeNotifyPanel() {
+    const panel = document.getElementById('notifyPanel');
+    const btn = document.getElementById('notifyBtn');
+    if (panel) panel.hidden = true;
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('is-open');
+    }
+  }
+
+  function closeTopPopovers() {
+    closeAcctMenu();
+    closeNotifyPanel();
+  }
+
+  function paintNotifyBadge() {
+    const badge = document.getElementById('notifyBadge');
+    if (!badge) return;
+    const n = unreadCount();
+    badge.hidden = n === 0;
+    badge.textContent = n > 9 ? '9+' : String(n);
+  }
+
+  function paintNotifyPanel() {
+    const panel = document.getElementById('notifyPanel');
+    if (!panel) return;
+    const list = NOTICES.length
+      ? '<div class="nt-list">' + NOTICES.map(n =>
+        '<button type="button" class="nt-item' + (n.unread ? ' unread' : '') + '" data-nid="' + n.id + '">' +
+        '<span class="nt-ico">' + icon(n.icon) + '</span>' +
+        '<span class="nt-body"><span class="nt-row1"><span class="nt-name">' + esc(n.title) + '</span><span class="nt-time">' + esc(n.time) + '</span></span>' +
+        '<span class="nt-act">' + esc(n.body) + '</span></span></button>'
+      ).join('') + '</div>'
+      : '<div class="nt-empty">暂无系统通知</div>';
+    panel.innerHTML =
+      '<div class="nt-head"><div class="nt-title">消息通知</div>' +
+      (unreadCount() ? '<button type="button" class="nt-readall" data-readall>全部已读</button>' : '') +
+      '</div>' + list;
+    ui.icons();
+  }
+
+  function openNotifyPanel() {
+    closeAcctMenu();
+    const panel = document.getElementById('notifyPanel');
+    const btn = document.getElementById('notifyBtn');
+    if (!panel || !btn) return;
+    paintNotifyPanel();
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    btn.classList.add('is-open');
+    const r = btn.getBoundingClientRect();
+    panel.style.top = Math.round(r.bottom + 8) + 'px';
+    panel.style.right = Math.round(window.innerWidth - r.right) + 'px';
+    panel.style.left = 'auto';
+  }
+
+  function paintAcctMenu() {
+    const menu = document.getElementById('acctMenu');
+    if (!menu) return;
     const user = svc.currentUser();
+    if (acctPanel === 'accounts') {
+      menu.innerHTML =
+        '<div class="acct-sec acct-switch-head"><button type="button" class="acct-item" data-acct-back>' + icon('chevron-left') + '<span>切换账号</span></button></div>' +
+        '<div class="acct-sep"></div>' +
+        '<div class="acct-sec">' + svc.users().map(u =>
+          '<button type="button" class="acct-item acct-user' + (u.id === user.id ? ' is-current' : '') + '" role="menuitem" data-switch="' + u.id + '">' +
+          '<span class="avatar' + (u.id === user.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' +
+          '<span class="acct-user-meta"><span class="acct-user-name">' + esc(u.name) + '</span><span class="acct-user-sub">' + esc(u.title + ' · ' + u.dept + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</span></span>' +
+          (u.id === user.id ? icon('check') : '') +
+          '</button>'
+        ).join('') + '</div>';
+    } else {
+      menu.innerHTML =
+        '<div class="acct-top"><div class="acct-avatar" id="acctAvatar">' + esc(user.name.slice(0, 1)) + '</div><div class="acct-name" id="acctName">' + esc(user.name) + '</div><div class="acct-email" id="acctEmail">' + esc(userEmail(user)) + '</div></div>' +
+        '<div class="acct-sep"></div>' +
+        '<div class="acct-sec"><div class="acct-row"><span class="acct-ico">' + icon('languages') + '</span><span class="acct-grow">选择语言</span><div class="lang-seg" role="group" aria-label="选择语言"><button type="button" data-lang="zh" class="is-on">中</button><button type="button" data-lang="en">EN</button></div></div></div>' +
+        '<div class="acct-sep"></div>' +
+        '<div class="acct-sec">' +
+        '<button class="acct-item" type="button" role="menuitem" data-demo="space">' + icon('building-2') + '<span>企业空间</span></button>' +
+        '<button class="acct-item" type="button" role="menuitem" data-demo="org">' + icon('users-round') + '<span>企业组织运营</span></button>' +
+        '<button class="acct-item" type="button" role="menuitem" data-demo="profile">' + icon('circle-user') + '<span>个人资料</span></button>' +
+        '<button class="acct-item" type="button" role="menuitem" data-demo="version">' + icon('download') + '<span class="acct-grow">版本更新</span><span class="acct-dot" aria-label="有更新"></span></button>' +
+        '<button class="acct-item" type="button" role="menuitem" data-acct-switch>' + icon('arrow-left-right') + '<span>切换账号</span></button>' +
+        '<div class="acct-sep acct-sep-in"></div>' +
+        '<button class="acct-item" type="button" role="menuitem" data-demo="logout">' + icon('log-out') + '<span>退出登录</span></button>' +
+        '</div>';
+    }
+    ui.icons();
+  }
+
+  function openAcctMenu() {
+    closeNotifyPanel();
+    const menu = document.getElementById('acctMenu');
+    const btn = document.getElementById('userBtn');
+    if (!menu || !btn) return;
+    acctPanel = 'main';
+    paintAcctMenu();
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    const r = btn.getBoundingClientRect();
+    menu.style.top = Math.round(r.bottom + 8) + 'px';
+    menu.style.right = Math.round(window.innerWidth - r.right) + 'px';
+    menu.style.left = 'auto';
+  }
+
+  function shell() {
     document.getElementById('app').innerHTML =
       '<div class="app"><aside class="side" aria-label="主导航"><div class="brand"><div class="brand-mark">' + icon('flame') + '</div><div><div class="brand-name">AgentOS</div><div class="brand-sub">炼铁厂智能体平台</div></div></div>' +
-      '<nav class="nav" id="nav"></nav><div class="side-foot">演示环境 · 数据为 Mock</div></aside>' +
+      '<nav class="nav" id="nav"></nav></aside>' +
       '<div class="main"><header class="topbar"><div class="crumbs" id="crumbs"></div><div class="spacer"></div>' +
-      '<button class="phase-chip" id="phaseChip" title="切换演示阶段"><span class="phase-dot"></span><span id="phaseText"></span></button>' +
-      '<label class="user-switch"><span class="avatar" id="userAvatar"></span><span class="sr-only">切换演示用户</span><select id="userSelect">' + svc.users().map(u => '<option value="' + u.id + '"' + (u.id === user.id ? ' selected' : '') + '>' + esc(u.name + ' · ' + u.dept + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</option>').join('') + '</select></label>' +
-      '</header><main class="view" id="view" tabindex="-1"></main></div></div>';
-    document.getElementById('userSelect').addEventListener('change', e => {
-      store.state.settings.userId = e.target.value; store.save();
-      ui.toast('已切换为 ' + svc.currentUser().name + '（' + svc.currentUser().dept + '）');
-      render();
+      '<div class="topbar-actions">' +
+      '<button class="icon-btn" id="notifyBtn" type="button" aria-label="消息通知" aria-haspopup="dialog" aria-expanded="false">' + icon('bell') + '<span class="notify-badge" id="notifyBadge" hidden></span></button>' +
+      '<div class="user-menu"><button class="user-trigger" id="userBtn" type="button" aria-label="账号菜单" aria-haspopup="menu" aria-expanded="false"><span class="avatar" id="userAvatar"></span></button></div>' +
+      '</div></header><main class="view" id="view" tabindex="-1"></main></div></div>' +
+      '<div class="acct-menu" id="acctMenu" role="menu" hidden></div>' +
+      '<div class="notify-panel" id="notifyPanel" role="dialog" aria-label="消息通知" hidden></div>';
+
+    document.getElementById('notifyBtn').addEventListener('click', e => {
+      e.stopPropagation();
+      const panel = document.getElementById('notifyPanel');
+      if (panel.hidden) openNotifyPanel(); else closeNotifyPanel();
     });
-    document.getElementById('phaseChip').addEventListener('click', () => { location.hash = '#/admin/settings'; });
+    document.getElementById('notifyPanel').addEventListener('click', e => {
+      e.stopPropagation();
+      if (e.target.closest('[data-readall]')) {
+        NOTICES.forEach(n => { n.unread = false; });
+        paintNotifyBadge();
+        paintNotifyPanel();
+        return;
+      }
+      const item = e.target.closest('[data-nid]');
+      if (!item) return;
+      const n = NOTICES.find(x => x.id === item.dataset.nid);
+      if (!n) return;
+      n.unread = false;
+      paintNotifyBadge();
+      closeNotifyPanel();
+      if (n.href) location.hash = n.href;
+    });
+    document.getElementById('userBtn').addEventListener('click', e => {
+      e.stopPropagation();
+      const menu = document.getElementById('acctMenu');
+      if (menu.hidden) openAcctMenu(); else closeAcctMenu();
+    });
+    document.getElementById('acctMenu').addEventListener('click', e => {
+      e.stopPropagation();
+      const t = e.target.closest('[data-acct-switch],[data-acct-back],[data-switch],[data-demo],[data-lang]');
+      if (!t) return;
+      if (t.dataset.acctSwitch !== undefined) { acctPanel = 'accounts'; paintAcctMenu(); return; }
+      if (t.dataset.acctBack !== undefined) { acctPanel = 'main'; paintAcctMenu(); return; }
+      if (t.dataset.switch) { switchUser(t.dataset.switch); return; }
+      if (t.dataset.lang) {
+        t.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
+        if (t.dataset.lang === 'en') ui.toast('演示环境暂仅提供中文');
+        return;
+      }
+      const demo = t.dataset.demo;
+      closeAcctMenu();
+      if (demo === 'profile') { location.hash = '#/admin/settings'; return; }
+      if (demo === 'logout') { ui.toast('演示环境无需退出登录'); return; }
+      ui.toast('演示环境暂未接入该功能');
+    });
+    document.addEventListener('click', closeTopPopovers);
+    window.addEventListener('resize', closeTopPopovers);
+    window.addEventListener('hashchange', closeTopPopovers);
+    paintNotifyBadge();
+    ui.icons();
   }
 
   function renderNav(active) {
@@ -54,7 +239,9 @@
     document.getElementById('nav').innerHTML = NAV.map(g => '<div class="nav-group"><div class="nav-label">' + g.label + '</div>' + g.items.map(it => '<a class="nav-item' + (it.id === active ? ' active' : '') + '" href="' + it.href + '"' + (it.id === active ? ' aria-current="page"' : '') + '>' + icon(it.icon) + '<span>' + it.name + '</span>' + (it.id === 'sessions' ? '<span class="count">' + sessionsMine + '</span>' : '') + '</a>').join('') + '</div>').join('');
     const user = svc.currentUser();
     document.getElementById('userAvatar').textContent = user.name.slice(0, 1);
-    document.getElementById('phaseText').textContent = '当前演示：' + svc.PHASE_LABEL[svc.phase()];
+    paintNotifyBadge();
+    const menu = document.getElementById('acctMenu');
+    if (menu && !menu.hidden) paintAcctMenu();
   }
 
   AOS.setCrumbs = function (items) {

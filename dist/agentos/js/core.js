@@ -17,7 +17,7 @@
   const store = {
     get state() { return state; },
     load() {
-      try { const raw = root.localStorage && root.localStorage.getItem(KEY); if (raw) { state = JSON.parse(raw); return; } } catch (e) { /* 浏览器禁用存储时使用内存数据 */ }
+      try { const raw = root.localStorage && root.localStorage.getItem(KEY); if (raw) { state = JSON.parse(raw); ensurePhase3(); store.saveNow(); return; } } catch (e) { /* 浏览器禁用存储时使用内存数据 */ }
       state = seed();
       store.saveNow();
     },
@@ -38,7 +38,8 @@
     const ra = d.agents.find(a => a.id === 'research-assistant');
     ra.versions[1].config.prompt += ' 回答前提示用户可按工序（高炉、烧结、焦化、球团）缩小检索范围。';
     ra.draft = copy(ra.versions[1].config);
-    state = { settings: { phase: 1, userId: 'u-wang' }, agents: d.agents, docs: d.docs, sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules, seq: 1 };
+    state = { settings: { phase: 3, userId: 'u-wang' }, agents: d.agents, docs: d.docs, sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules, seq: 1 };
+    ensurePhase3();
     d.seedSessions.forEach(s => {
       const agent = state.agents.find(a => a.id === s.agentId);
       const user = d.users.find(u => u.id === s.userId);
@@ -55,6 +56,17 @@
     return state;
   }
 
+  function ensurePhase3() {
+    if (!state.settings) state.settings = { userId: 'u-wang' };
+    state.settings.phase = 3;
+    (state.agents || []).forEach(a => {
+      if (!a.custom && a.batch <= 3 && !(a.versions || []).length) {
+        a.versions = [{ id: 'v1.0', status: 'online', createdAt: now(), note: '三期演示上线', trialUsers: [], config: copy(a.draft) }];
+        a.updatedAt = now();
+      }
+    });
+  }
+
   /* ---------- Service ---------- */
   const users = () => AOS.data.users;
   const svc = {
@@ -63,7 +75,7 @@
     agent(id) { return state.agents.find(a => a.id === id); },
     tool(id) { return AOS.data.tools.find(t => t.id === id); },
     category(id) { return AOS.data.categories.find(c => c.id === id) || { id, name: '未分类', icon: 'box' }; },
-    phase() { return state.settings.phase; },
+    phase() { return 3; },
     PHASE_LABEL: ['', '一期', '二期', '三期'],
     portalStatus(agent) {
       if (agent.batch > svc.phase()) return 'planned';
@@ -74,7 +86,7 @@
       return 'draft';
     },
     resolve(agent, user) {
-      const phase = state ? state.settings.phase : 1;
+      const phase = svc.phase();
       if (agent.batch > phase) return { ok: false, status: 'planned', reason: '该智能体计划在' + svc.PHASE_LABEL[agent.batch] + '上线' };
       const vs = agent.versions || [];
       const trial = vs.slice().reverse().find(v => v.status === 'trial');
@@ -101,7 +113,7 @@
       const model = svc.modelFor(opts.zone);
       return E.respond({
         agent: config, text, zone: opts.zone, scope: opts.scope, mode: opts.mode || 'chat', user, policy: state.policy,
-        docs: state.docs, web: AOS.data.web, toolsCatalog: AOS.data.tools, phase: state.settings.phase,
+        docs: state.docs, web: AOS.data.web, toolsCatalog: AOS.data.tools, phase: svc.phase(),
         modelName: model ? model.name : null, state: session.flowState ? copy(session.flowState) : null, now: opts.now
       });
     },
@@ -137,16 +149,6 @@
         blocked: uniqBy([].concat(...ai.map(m => m.turn.blocked || [])), 'id'),
         external: ai.some(m => m.zone === 'external')
       };
-    },
-    setPhase(phase) {
-      state.settings.phase = phase;
-      state.agents.forEach(a => {
-        if (!a.custom && a.batch <= phase && !(a.versions || []).length) {
-          a.versions = [{ id: 'v1.0', status: 'online', createdAt: now(), note: '按分期计划上线（演示）', trialUsers: [], config: copy(a.draft) }];
-          a.updatedAt = now();
-        }
-      });
-      store.save();
     },
     nextVersion(agent) {
       const last = (agent.versions || []).map(v => v.id).sort((a, b) => { const pa = a.slice(1).split('.').map(Number), pb = b.slice(1).split('.').map(Number); return pa[0] - pb[0] || pa[1] - pb[1]; }).pop();

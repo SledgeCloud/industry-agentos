@@ -10,7 +10,7 @@
   }
   function bindBeAdmin(el) {
     const b = el.querySelector('[data-be-admin]');
-    if (b) b.addEventListener('click', () => { store.state.settings.userId = 'u-chen'; store.save(); document.getElementById('userSelect').value = 'u-chen'; ui.toast('已切换为平台管理员 陈晓'); AOS.render(); });
+    if (b) b.addEventListener('click', () => { AOS.switchUser('u-chen'); });
   }
 
   /* ---------- 出网策略 ---------- */
@@ -85,7 +85,6 @@
   /* ---------- 定时运行 ---------- */
   AOS.views.schedules = function (el) {
     AOS.setCrumbs([{ name: '管理' }, { name: '定时运行' }]);
-    const ready = svc.phase() >= 3;
     const freqText = s => s.frequency === '每月' ? '每月 ' + s.day + ' 日 ' + s.time : s.frequency === '每周' ? '每周' + '一二三四五六日'[(s.day || 1) - 1] + ' ' + s.time : '每天 ' + s.time;
     function run(sch) {
       const agent = svc.agent(sch.agentId);
@@ -104,9 +103,8 @@
     }
     function draw() {
       const list = store.state.schedules;
-      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>定时运行</h1><p>按计划以创建者的身份和权限运行智能体，每次产生一条独立会话，结果推送给订阅人；失败时通知创建者，不自动重试。</p></div><button class="btn primary" id="newSch"' + (ready ? '' : ' disabled') + '>' + icon('plus') + '新建计划</button></div>' +
-        (ready ? '' : '<div class="note info" style="margin-bottom:14px">' + icon('calendar-clock') + '<span>定时运行在三期提供，当前为' + svc.PHASE_LABEL[svc.phase()] + '演示。可以在 <a href="#/admin/settings">演示设置</a> 中切换到三期体验。</span></div>') +
-        '<div class="stack">' + (list.length ? list.map(s => { const a = svc.agent(s.agentId); return '<div class="panel"><div class="panel-head"><div class="row"><div class="agent-icon" style="width:28px;height:28px;border-radius:7px">' + icon(a.draft.icon) + '</div><div><h3>' + esc(s.name) + '</h3><div class="small muted">' + esc(a.draft.name) + ' · ' + esc(freqText(s)) + ' · 创建者 ' + esc((svc.users().find(u => u.id === s.ownerId) || {}).name) + '</div></div></div><div class="row"><label class="row small"><span class="switch"><input type="checkbox" data-en="' + s.id + '"' + (s.enabled ? ' checked' : '') + (ready ? '' : ' disabled') + ' aria-label="启用计划"><span></span></span>' + (s.enabled ? '已启用' : '已停用') + '</label><button class="btn sm" data-run="' + s.id + '"' + (ready ? '' : ' disabled') + '>' + icon('play') + '立即运行</button></div></div>' +
+      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>定时运行</h1><p>按计划以创建者的身份和权限运行智能体，每次产生一条独立会话，结果推送给订阅人；失败时通知创建者，不自动重试。</p></div><button class="btn primary" id="newSch">' + icon('plus') + '新建计划</button></div>' +
+        '<div class="stack">' + (list.length ? list.map(s => { const a = svc.agent(s.agentId); return '<div class="panel"><div class="panel-head"><div class="row"><div class="agent-icon" style="width:28px;height:28px;border-radius:7px">' + icon(a.draft.icon) + '</div><div><h3>' + esc(s.name) + '</h3><div class="small muted">' + esc(a.draft.name) + ' · ' + esc(freqText(s)) + ' · 创建者 ' + esc((svc.users().find(u => u.id === s.ownerId) || {}).name) + '</div></div></div><div class="row"><label class="row small"><span class="switch"><input type="checkbox" data-en="' + s.id + '"' + (s.enabled ? ' checked' : '') + ' aria-label="启用计划"><span></span></span>' + (s.enabled ? '已启用' : '已停用') + '</label><button class="btn sm" data-run="' + s.id + '">' + icon('play') + '立即运行</button></div></div>' +
           '<div class="panel-body"><dl class="kv"><dt>固定输入</dt><dd>' + esc(s.input) + '</dd><dt>订阅人</dt><dd>' + esc(s.subscribers.join('、')) + '</dd><dt>运行记录</dt><dd>' + (s.runs.length ? s.runs.slice(0, 5).map(r => '<div class="row small"><span class="badge ' + (r.status === '成功' ? 'ok' : 'danger') + '">' + r.status + '</span><span class="muted">' + esc(r.at) + '</span>' + (r.sessionId ? '<a href="#/sessions/' + r.sessionId + '">查看会话</a>' : '<span class="muted">' + esc(r.reason || '') + '</span>') + '</div>').join('') : '<span class="muted">尚未运行</span>') + '</dd></dl></div></div>'; }).join('') : '<div class="empty">' + icon('calendar-clock') + '还没有运行计划。</div>') + '</div></div>';
       el.querySelectorAll('[data-en]').forEach(i => i.addEventListener('change', () => { const s = list.find(x => x.id === i.dataset.en); s.enabled = i.checked; store.save(); draw(); }));
       el.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => run(list.find(x => x.id === b.dataset.run))));
@@ -138,25 +136,17 @@
   /* ---------- 演示设置 ---------- */
   AOS.views.settings = function (el) {
     AOS.setCrumbs([{ name: '管理' }, { name: '演示设置' }]);
-    const PHASES = [
-      { n: 1, items: ['工坊、发布、会话记录与导出、权限与密级、模型网关', '内置工具：文档检索、联网搜索、网页读取、报告导出', '智能体：科研资料助手、调研报告助手、立项查新助手、技术情报简报助手（手动版）'] },
-      { n: 2, items: ['内置工具：图纸检索、代码检索、数据查询', '课题申报书、结题验收、工艺问题诊断、试验方案设计等 9 个智能体'] },
-      { n: 3, items: ['内置工具：数据分析', '定时运行', '试验数据分析助手、技术情报简报（定时版）'] }
-    ];
     function draw() {
-      const cur = svc.phase();
       const me = svc.currentUser();
-      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>演示设置</h1><p>切换演示阶段和演示用户。阶段决定哪些内置工具和智能体可用。</p></div></div>' +
-        '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>演示阶段</h3><span class="muted small">按设计方案的分期计划解锁能力</span></div><div class="panel-body"><div class="phase-cards">' + PHASES.map(p => '<button class="phase-card' + (p.n === cur ? ' on' : '') + '" data-phase="' + p.n + '"><b>' + svc.PHASE_LABEL[p.n] + (p.n === cur ? ' · 当前' : '') + '</b><ul>' + p.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul></button>').join('') + '</div></div></div>' +
+      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>演示设置</h1><p>切换演示用户。不同部门和密级看到的资料与出网策略不同。</p></div></div>' +
         '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>演示用户</h3><span class="muted small">不同部门和密级会看到不同的资料，出网策略也按部门执行</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>用户</th><th>职务</th><th>部门</th><th>密级</th><th>“内部”资料可发往外网模型</th><th></th></tr></thead><tbody>' +
         svc.users().map(u => '<tr><td><div class="row"><span class="avatar' + (u.id === me.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' + esc(u.name) + '</div></td><td>' + esc(u.title) + '</td><td>' + esc(u.dept) + '</td><td>' + ui.lv(u.clearance) + '</td><td>' + (P.egressAllowed('internal', u.dept, store.state.policy) ? '<span class="badge ok">允许</span>' : '<span class="badge">禁止</span>') + '</td><td>' + (u.id === me.id ? '<span class="muted small">当前用户</span>' : '<button class="btn sm" data-user="' + u.id + '">切换</button>') + '</td></tr>').join('') + '</tbody></table></div></div>' +
         '<div class="panel"><div class="panel-head"><h3>演示数据</h3></div><div class="panel-body row"><span class="grow muted">配置、资料、会话和审计记录保存在当前浏览器中。重置后恢复初始示例。</span><button class="btn danger" id="resetBtn">' + icon('rotate-ccw') + '重置演示数据</button></div></div></div>';
-      el.querySelectorAll('[data-phase]').forEach(b => b.addEventListener('click', () => { svc.setPhase(Number(b.dataset.phase)); ui.toast('已切换到' + svc.PHASE_LABEL[svc.phase()] + '演示，本阶段智能体已按计划上线'); AOS.render(); }));
-      el.querySelectorAll('[data-user]').forEach(b => b.addEventListener('click', () => { store.state.settings.userId = b.dataset.user; store.save(); document.getElementById('userSelect').value = b.dataset.user; ui.toast('已切换为 ' + svc.currentUser().name); AOS.render(); }));
+      el.querySelectorAll('[data-user]').forEach(b => b.addEventListener('click', () => { AOS.switchUser(b.dataset.user); }));
       el.querySelector('#resetBtn').addEventListener('click', async () => {
         const ok = await ui.confirm({ title: '重置演示数据', okText: '确认重置', body: '<p>将清除新建的智能体、版本、上传的资料、会话、审计记录和策略修改，恢复初始示例。</p>' });
         if (!ok) return;
-        store.reset(); document.getElementById('userSelect').value = store.state.settings.userId; ui.toast('已重置演示数据'); location.hash = '#/';
+        store.reset(); ui.toast('已重置演示数据'); location.hash = '#/';
         AOS.render();
       });
       ui.icons();
