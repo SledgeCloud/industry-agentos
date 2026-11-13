@@ -624,6 +624,18 @@ table.tbl { width: 100%; border-collapse: collapse; }
 .tabs button { border: 0; background: none; height: 36px; padding: 0 10px; cursor: pointer; font-size: 12px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: center; }
 .tabs button.on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 500; }
 .tabs button .count { font-size: 11px; color: var(--muted); }
+.kb-path {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin: 0 0 12px; font-size: 12px; color: var(--muted);
+}
+.kb-path a { color: var(--muted); }
+.kb-path a:hover { color: var(--ink); }
+.kb-path strong { color: var(--ink); font-weight: 500; }
+.kb-path .sep { opacity: 0.5; }
+.tbl tr.folder-row td { background: #fafafa; }
+.tbl tr.folder-row:hover td { background: #f3f3f3; }
+.folder-title { display: flex; align-items: center; gap: 10px; min-width: 260px; }
+.folder-title .t { color: var(--ink); font-weight: 500; }
 .type-ico { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: #f5f5f5; color: var(--text-2); flex-shrink: 0; }
 .type-ico svg.lucide { width: 14px; height: 14px; }
 .doc-title { display: flex; align-items: center; gap: 10px; min-width: 260px; }

@@ -2,6 +2,7 @@
 (function (root) {
   const AOS = root.AOS;
   const { ui, svc, store, policy: P } = AOS;
+  const F = AOS.folders;
   const { esc, icon } = ui;
   const TABS = [
     { id: '', name: '全部' }, { id: 'doc', name: '文档', types: ['pdf', 'word'] }, { id: 'cad', name: '图纸', types: ['cad'] },
@@ -11,6 +12,7 @@
   const PROCESSES = ['高炉', '烧结', '焦化', '球团', '综合'];
   const f = { tab: '', q: '', process: '', level: '', status: '' };
   const active = new Set();
+  let currentFolderId = null;
   let redraw = null;
 
   const TITLE_BLOCK = { auto: ['自动识别', 'ok'], manual: ['人工补录', 'info'], missing: ['未识别，待补录', 'warn'] };
@@ -22,27 +24,94 @@
     return '<span class="badge ok">' + icon('check') + (d.type === 'db' ? '字典已登记' : d.type === 'code' ? '已同步' : '已解析') + '</span>';
   }
 
+  function matchDoc(d) {
+    const tab = TABS.find(t => t.id === f.tab);
+    return (!tab.types || tab.types.includes(d.type)) && (!f.process || d.process === f.process) && (!f.level || d.level === f.level) && (!f.status || d.status === f.status) && (!f.q || (d.title + d.topic + d.author + (d.cad ? d.cad.drawingNo : '')).includes(f.q));
+  }
+
+  function folderOptionsHtml(selected) {
+    const sel = F.normId(selected);
+    return F.flatOptions(store.state.folders).map(o => {
+      const id = F.normId(o.id);
+      const val = id == null ? '' : id;
+      return '<option value="' + esc(val) + '"' + (id === sel ? ' selected' : '') + '>' + esc(o.label) + '</option>';
+    }).join('');
+  }
+
+  function folderCount(folderId, visibleDocs) {
+    const kids = F.childrenOf(store.state.folders, folderId).length;
+    const docs = F.docsIn(visibleDocs, folderId).length;
+    return kids + docs;
+  }
+
   AOS.views.knowledge = function (el) {
     AOS.setCrumbs([{ name: '知识库' }]);
     const user = svc.currentUser();
 
-    function list() {
-      const tab = TABS.find(t => t.id === f.tab);
-      return store.state.docs.filter(d => P.canView(user, d) && (!tab.types || tab.types.includes(d.type)) && (!f.process || d.process === f.process) && (!f.level || d.level === f.level) && (!f.status || d.status === f.status) && (!f.q || (d.title + d.topic + d.author + (d.cad ? d.cad.drawingNo : '')).includes(f.q)));
-    }
-
     function draw() {
+      const folders = store.state.folders;
       const visible = store.state.docs.filter(d => P.canView(user, d));
       const hidden = store.state.docs.length - visible.length;
-      const rows = list();
+      const searching = !!f.q;
+
       el.querySelector('#kTabs').innerHTML = TABS.map(t => '<button class="' + (f.tab === t.id ? 'on' : '') + '" data-tab="' + t.id + '">' + t.name + '<span class="count">' + visible.filter(d => !t.types || t.types.includes(d.type)).length + '</span></button>').join('');
       el.querySelector('#kHidden').innerHTML = hidden ? '<div class="note" style="margin-bottom:12px">' + icon('eye-off') + '<span>已按你的部门权限和密级（' + P.levelLabel(user.clearance) + '级）隐藏 ' + hidden + ' 份资料。切换为平台管理员可查看全部。</span></div>' : '';
-      el.querySelector('#kBody').innerHTML = rows.length ? rows.map(d => '<tr class="clickable" data-id="' + d.id + '"><td><div class="doc-title">' + ui.typeIcon(d.type) + '<div><div class="t">' + esc(d.title) + '</div><div class="small muted">' + esc(AOS.engine.TYPE_LABEL[d.type]) + (d.cad && d.cad.drawingNo ? ' · 图号 ' + esc(d.cad.drawingNo) : '') + (d.code ? ' · ' + esc(d.code.lang) : '') + (d.pages ? ' · ' + d.pages + ' 页' : '') + '</div></div></div></td><td class="nowrap">' + esc(d.library) + '</td><td>' + esc(d.process) + '</td><td>' + d.year + '</td><td class="nowrap">' + esc(d.author || '—') + '<div class="small muted">' + esc(d.dept) + '</div></td><td>' + ui.lv(d.level) + '</td><td class="nowrap small">' + (d.acl && d.acl.length ? esc(d.acl.join('、')) : '全部部门') + '</td><td>' + statusCell(d) + '</td><td class="nowrap">' + (d.status === 'failed' ? '<button class="btn sm" data-retry="' + d.id + '">' + icon('rotate-ccw') + '重试</button>' : '<button class="btn sm ghost">详情</button>') + '</td></tr>').join('') : '<tr><td colspan="9"><div class="empty">' + icon('search-x') + '没有符合条件的资料。调整筛选条件，或上传新资料。</div></td></tr>';
+
+      const path = F.pathFolders(folders, currentFolderId);
+      el.querySelector('#kPath').innerHTML =
+        '<a href="#/knowledge" data-folder="">知识库</a>' +
+        path.map((p, i) => {
+          const last = i === path.length - 1 && !searching;
+          return '<span class="sep">/</span>' + (last
+            ? '<strong>' + esc(p.name) + '</strong>'
+            : '<a href="#/knowledge" data-folder="' + esc(p.id) + '">' + esc(p.name) + '</a>');
+        }).join('') +
+        (searching ? '<span class="sep">/</span><strong>搜索结果</strong>' : (path.length ? '' : '<span class="sep">/</span><strong>全部资料</strong>'));
+
+      let folderRows = [];
+      let docRows = [];
+      if (searching) {
+        const allowed = new Set(F.descendantDocIds(folders, visible, currentFolderId));
+        docRows = visible.filter(d => allowed.has(d.id) && matchDoc(d));
+      } else {
+        folderRows = F.childrenOf(folders, currentFolderId);
+        docRows = F.docsIn(visible, currentFolderId).filter(matchDoc);
+      }
+
+      const body = [];
+      if (!searching) {
+        folderRows.forEach(folder => {
+          const n = folderCount(folder.id, visible);
+          body.push(
+            '<tr class="clickable folder-row" data-folder-id="' + esc(folder.id) + '">' +
+            '<td><div class="folder-title"><span class="type-ico">' + icon('folder') + '</span><div><div class="t">' + esc(folder.name) + '</div><div class="small muted">' + n + ' 项</div></div></div></td>' +
+            '<td class="nowrap muted">文件夹</td><td></td><td></td><td></td><td></td><td></td><td></td>' +
+            '<td class="nowrap" onclick="event.stopPropagation()"><details class="card-more"><summary class="card-more-btn" aria-label="更多操作">' + icon('ellipsis') + '</summary>' +
+            '<div class="card-more-menu" role="menu">' +
+            '<button type="button" role="menuitem" data-rename="' + esc(folder.id) + '">' + icon('pencil') + '重命名</button>' +
+            '<button type="button" role="menuitem" class="danger" data-delfolder="' + esc(folder.id) + '">' + icon('trash-2') + '删除</button>' +
+            '</div></details></td></tr>'
+          );
+        });
+      }
+      docRows.forEach(d => {
+        const pathHint = searching ? '<div class="small muted">' + esc(F.pathLabel(folders, d.folderId)) + '</div>' : '';
+        body.push(
+          '<tr class="clickable" data-id="' + d.id + '"><td><div class="doc-title">' + ui.typeIcon(d.type) + '<div><div class="t">' + esc(d.title) + '</div><div class="small muted">' + esc(AOS.engine.TYPE_LABEL[d.type]) + (d.cad && d.cad.drawingNo ? ' · 图号 ' + esc(d.cad.drawingNo) : '') + (d.code ? ' · ' + esc(d.code.lang) : '') + (d.pages ? ' · ' + d.pages + ' 页' : '') + '</div>' + pathHint + '</div></div></td>' +
+          '<td class="nowrap">' + esc(d.library) + '</td><td>' + esc(d.process) + '</td><td>' + d.year + '</td><td class="nowrap">' + esc(d.author || '—') + '<div class="small muted">' + esc(d.dept) + '</div></td><td>' + ui.lv(d.level) + '</td><td class="nowrap small">' + (d.acl && d.acl.length ? esc(d.acl.join('、')) : '全部部门') + '</td><td>' + statusCell(d) + '</td>' +
+          '<td class="nowrap">' + (d.status === 'failed' ? '<button class="btn sm" data-retry="' + d.id + '">' + icon('rotate-ccw') + '重试</button>' : '<button class="btn sm ghost">详情</button>') + '</td></tr>'
+        );
+      });
+      el.querySelector('#kBody').innerHTML = body.length
+        ? body.join('')
+        : '<tr><td colspan="9"><div class="empty">' + icon('search-x') + (searching ? '没有符合条件的资料。' : '当前文件夹为空。可新建文件夹或上传资料。') + '</div></td></tr>';
       ui.icons();
     }
 
-    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>知识库</h1><p>资料入库后由对应 MCP 自动解析和索引；智能体只能通过 MCP 检索，并按权限和密级过滤。</p></div><button class="btn primary" id="uploadBtn">' + icon('upload') + '上传资料</button></div>' +
+    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>知识库</h1><p>资料入库后由对应 MCP 自动解析和索引；智能体只能通过 MCP 检索，并按权限和密级过滤。</p></div>' +
+      '<div class="row"><button class="btn" id="newFolderBtn">' + icon('folder-plus') + '新建文件夹</button><button class="btn primary" id="uploadBtn">' + icon('upload') + '上传资料</button></div></div>' +
       '<div class="tabs" id="kTabs" role="tablist"></div><div id="kHidden"></div>' +
+      '<nav class="kb-path" id="kPath" aria-label="文件夹路径"></nav>' +
       '<div class="toolbar"><label class="search"><span class="sr-only">搜索资料</span>' + icon('search') + '<input class="input" id="kQ" placeholder="搜索名称、课题、作者或图号" value="' + esc(f.q) + '"></label>' +
       '<select class="select" id="kProc" aria-label="工序"><option value="">全部工序</option>' + PROCESSES.map(p => '<option' + (f.process === p ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>' +
       '<select class="select" id="kLevel" aria-label="密级"><option value="">全部密级</option>' + P.LEVELS.map(l => '<option value="' + l.id + '"' + (f.level === l.id ? ' selected' : '') + '>' + l.label + '</option>').join('') + '</select>' +
@@ -55,13 +124,27 @@
     el.querySelector('#kProc').addEventListener('change', e => { f.process = e.target.value; draw(); });
     el.querySelector('#kLevel').addEventListener('change', e => { f.level = e.target.value; draw(); });
     el.querySelector('#kStatus').addEventListener('change', e => { f.status = e.target.value; draw(); });
+    el.querySelector('#kPath').addEventListener('click', e => {
+      const a = e.target.closest('[data-folder]');
+      if (!a) return;
+      e.preventDefault();
+      currentFolderId = a.dataset.folder || null;
+      draw();
+    });
     el.querySelector('#kBody').addEventListener('click', e => {
+      const rename = e.target.closest('[data-rename]');
+      if (rename) { e.preventDefault(); e.stopPropagation(); renameFolder(rename.dataset.rename); return; }
+      const del = e.target.closest('[data-delfolder]');
+      if (del) { e.preventDefault(); e.stopPropagation(); deleteFolder(del.dataset.delfolder); return; }
       const r = e.target.closest('[data-retry]');
       if (r) { const d = store.state.docs.find(x => x.id === r.dataset.retry); startParse(d, false); return; }
+      const fr = e.target.closest('tr[data-folder-id]');
+      if (fr) { currentFolderId = fr.dataset.folderId; draw(); return; }
       const tr = e.target.closest('tr[data-id]');
       if (tr) openEditor(tr.dataset.id);
     });
     el.querySelector('#uploadBtn').addEventListener('click', upload);
+    el.querySelector('#newFolderBtn').addEventListener('click', createFolder);
 
     function startParse(d, mayFail, resume) {
       if (active.has(d.id)) return;
@@ -85,10 +168,64 @@
       setTimeout(step, 520);
     }
 
+    function createFolder() {
+      ui.modal({
+        title: '新建文件夹', okText: '创建',
+        body: '<div class="stack"><div class="field"><label for="nfName">名称</label><input class="input" id="nfName" placeholder="文件夹名称" autofocus><span class="err" id="nfErr" hidden></span></div>' +
+          '<div class="muted small">将创建在：' + esc(F.pathLabel(store.state.folders, currentFolderId)) + '</div></div>',
+        onMount(m, close) {
+          const input = m.querySelector('#nfName');
+          input.focus();
+          m.querySelector('[data-ok]').addEventListener('click', () => {
+            const name = input.value.trim();
+            const err = m.querySelector('#nfErr');
+            if (!name) { err.hidden = false; err.textContent = '请输入名称'; return; }
+            if (F.siblingNameTaken(store.state.folders, currentFolderId, name)) { err.hidden = false; err.textContent = '同级已有同名文件夹'; return; }
+            store.state.folders.push({ id: store.uid('f'), name, parentId: currentFolderId });
+            store.save(); close(); draw(); ui.toast('已创建文件夹');
+          });
+        }
+      });
+    }
+
+    function renameFolder(id) {
+      const folder = store.state.folders.find(x => x.id === id);
+      if (!folder) return;
+      ui.modal({
+        title: '重命名文件夹', okText: '保存',
+        body: '<div class="field"><label for="rfName">名称</label><input class="input" id="rfName" value="' + esc(folder.name) + '"><span class="err" id="rfErr" hidden></span></div>',
+        onMount(m, close) {
+          const input = m.querySelector('#rfName');
+          input.focus(); input.select();
+          m.querySelector('[data-ok]').addEventListener('click', () => {
+            const name = input.value.trim();
+            const err = m.querySelector('#rfErr');
+            if (!name) { err.hidden = false; err.textContent = '请输入名称'; return; }
+            if (F.siblingNameTaken(store.state.folders, folder.parentId, name, folder.id)) { err.hidden = false; err.textContent = '同级已有同名文件夹'; return; }
+            folder.name = name;
+            store.save(); close(); draw(); ui.toast('已重命名');
+          });
+        }
+      });
+    }
+
+    function deleteFolder(id) {
+      const folder = store.state.folders.find(x => x.id === id);
+      if (!folder) return;
+      if (!F.isEmpty(store.state.folders, store.state.docs, id)) {
+        ui.toast('文件夹非空，无法删除', 'warn');
+        return;
+      }
+      store.state.folders = store.state.folders.filter(x => x.id !== id);
+      if (currentFolderId === id) currentFolderId = F.normId(folder.parentId);
+      store.save(); draw(); ui.toast('已删除文件夹');
+    }
+
     function upload() {
       ui.modal({
         title: '上传资料', okText: '上传并解析',
         body: '<div class="stack"><div class="field"><label for="upFiles">选择文件</label><input class="input" type="file" id="upFiles" multiple accept=".pdf,.doc,.docx,.dwg,.dxf" style="padding:5px"><span class="hint">支持 PDF、Word、DWG、DXF。代码仓库和数据库通过管理员接入，不在此上传。</span></div>' +
+          '<div class="field"><label for="upFolder">文件夹</label><select class="select" id="upFolder">' + folderOptionsHtml(currentFolderId) + '</select></div>' +
           '<div class="grid-2"><div class="field"><label for="upLib">资料库</label><select class="select" id="upLib">' + LIBS.slice(0, 5).map(l => '<option>' + l + '</option>').join('') + '</select></div><div class="field"><label for="upProc">工序</label><select class="select" id="upProc">' + PROCESSES.map(p => '<option>' + p + '</option>').join('') + '</select></div></div>' +
           '<div class="grid-2"><div class="field"><label for="upLevel">密级</label><select class="select" id="upLevel">' + P.LEVELS.filter(l => P.levelRank(l.id) <= P.levelRank(user.clearance)).map(l => '<option value="' + l.id + '"' + (l.id === 'internal' ? ' selected' : '') + '>' + l.label + '</option>').join('') + '</select><span class="hint">不能高于你本人的密级</span></div><div class="field"><label for="upTopic">课题</label><input class="input" id="upTopic" placeholder="可选"></div></div>' +
           '<div class="field"><span class="field-label">可见部门</span><div class="row wrap"><label class="check"><input type="checkbox" id="upAll" checked>全部部门</label>' + AOS.data.orgs.map(o => '<label class="check"><input type="checkbox" class="upOrg" value="' + esc(o) + '" disabled>' + esc(o) + '</label>').join('') + '</div></div>' +
@@ -100,13 +237,14 @@
             const files = Array.from(m.querySelector('#upFiles').files || []);
             if (!files.length) { m.querySelector('#upErr').hidden = false; return; }
             const acl = all.checked ? [] : Array.from(m.querySelectorAll('.upOrg:checked')).map(c => c.value);
+            const folderId = F.normId(m.querySelector('#upFolder').value);
             files.forEach(file => {
               const ext = file.name.split('.').pop().toLowerCase();
               const type = ext === 'pdf' ? 'pdf' : ext === 'dwg' || ext === 'dxf' ? 'cad' : 'word';
               const title = file.name.replace(/\.[^.]+$/, '');
               const recognized = type === 'cad' && !/草图|未命名/.test(title);
               const d = {
-                id: store.uid('u'), type, title, library: type === 'cad' ? '图纸库' : m.querySelector('#upLib').value, process: m.querySelector('#upProc').value, topic: m.querySelector('#upTopic').value.trim() || '未分类', year: new Date().getFullYear(),
+                id: store.uid('u'), type, title, folderId, library: type === 'cad' ? '图纸库' : m.querySelector('#upLib').value, process: m.querySelector('#upProc').value, topic: m.querySelector('#upTopic').value.trim() || '未分类', year: new Date().getFullYear(),
                 author: user.name, dept: user.dept, level: m.querySelector('#upLevel').value, acl, pages: type === 'cad' ? undefined : Math.max(1, Math.round(file.size / 40000)),
                 keywords: title.split(/[\s_\-（）()]+/).filter(w => w.length >= 2), summary: type === 'cad' ? ext.toUpperCase() + ' · 新上传' : '新上传资料，摘要将在解析后生成', snippets: [], status: 'parsing', updatedAt: svc.now().slice(0, 10),
                 cad: type === 'cad' ? { format: ext.toUpperCase(), drawingNo: recognized ? 'NEW-' + String(Date.now()).slice(-4) : '', version: recognized ? 'A' : '', designer: recognized ? user.name : '', date: recognized ? svc.now().slice(0, 7) : '', titleBlock: recognized ? 'auto' : 'missing' } : undefined
@@ -128,6 +266,7 @@
         (d.type === 'cad' ? ui.cadThumb(d, 520, 300) + '<div class="row"><span class="field-label">标题栏</span><span class="badge ' + tb[1] + '">' + tb[0] + '</span><span class="muted small">只管理文件与标题栏信息，不解读图纸内容</span></div>' +
           '<div class="grid-2">' + [['drawingNo', '图号'], ['version', '版本'], ['designer', '设计人'], ['date', '日期']].map(([k, l]) => '<div class="field"><label for="cad-' + k + '">' + l + '</label><input class="input" id="cad-' + k + '" data-cad="' + k + '" value="' + esc(d.cad[k]) + '"' + (canEdit ? '' : ' disabled') + '></div>').join('') + '</div>' : '') +
         '<div class="grid-2"><div class="field"><label for="eTitle">名称</label><input class="input" id="eTitle" value="' + esc(d.title) + '"' + (canEdit ? '' : ' disabled') + '></div><div class="field"><label for="eLib">资料库</label><select class="select" id="eLib"' + (canEdit ? '' : ' disabled') + '>' + LIBS.map(l => '<option' + (l === d.library ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div></div>' +
+        '<div class="field"><label for="eFolder">文件夹</label><select class="select" id="eFolder"' + (canEdit ? '' : ' disabled') + '>' + folderOptionsHtml(d.folderId) + '</select></div>' +
         '<div class="grid-3"><div class="field"><label for="eProc">工序</label><select class="select" id="eProc"' + (canEdit ? '' : ' disabled') + '>' + PROCESSES.map(p => '<option' + (p === d.process ? ' selected' : '') + '>' + p + '</option>').join('') + '</select></div><div class="field"><label for="eTopic">课题</label><input class="input" id="eTopic" value="' + esc(d.topic) + '"' + (canEdit ? '' : ' disabled') + '></div><div class="field"><label for="eLevel">密级</label><select class="select" id="eLevel"' + (canEdit ? '' : ' disabled') + '>' + P.LEVELS.filter(l => P.levelRank(l.id) <= P.levelRank(user.clearance)).map(l => '<option value="' + l.id + '"' + (l.id === d.level ? ' selected' : '') + '>' + l.label + '</option>').join('') + '</select></div></div>' +
         '<div class="field"><span class="field-label">可见部门</span><div class="row wrap"><label class="check"><input type="checkbox" id="eAll"' + (!d.acl || !d.acl.length ? ' checked' : '') + (canEdit ? '' : ' disabled') + '>全部部门</label>' + AOS.data.orgs.map(o => '<label class="check"><input type="checkbox" class="eOrg" value="' + esc(o) + '"' + ((d.acl || []).includes(o) ? ' checked' : '') + (!canEdit || !d.acl || !d.acl.length ? ' disabled' : '') + '>' + esc(o) + '</label>').join('') + '</div></div>' +
         (canEdit ? '' : '<div class="note">' + icon('lock') + '<span>只有资料所属部门或平台管理员可以修改。</span></div>') +
@@ -143,6 +282,7 @@
             d.title = dr.querySelector('#eTitle').value.trim() || d.title;
             d.library = dr.querySelector('#eLib').value; d.process = dr.querySelector('#eProc').value; d.topic = dr.querySelector('#eTopic').value.trim();
             d.level = dr.querySelector('#eLevel').value;
+            d.folderId = F.normId(dr.querySelector('#eFolder').value);
             d.acl = all.checked ? [] : Array.from(dr.querySelectorAll('.eOrg:checked')).map(c => c.value);
             if (d.cad) {
               const before = JSON.stringify(d.cad);
