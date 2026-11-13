@@ -395,5 +395,12 @@
     { id: 'meeting-minutes', name: '技术例会纪要', icon: 'notebook-pen', category: '报告流程', desc: '将讨论要点整理为决议、待办与负责人三栏纪要。', trigger: '工作流型智能体', status: 'published' }
   ];
 
-  AOS.data = { users, orgs, categories, tools, skills, mcpMarket, skillMarket, agents, docs, web, models, policy, schedules, seedSessions };
+  const folders = (AOS.folders && AOS.folders.SEED_FOLDERS)
+    ? AOS.folders.SEED_FOLDERS.map(f => Object.assign({}, f))
+    : [];
+  docs.forEach(d => {
+    if (d.folderId == null && AOS.folders) d.folderId = AOS.folders.defaultFolderId(d);
+  });
+
+  AOS.data = { users, orgs, categories, tools, skills, mcpMarket, skillMarket, agents, docs, folders, web, models, policy, schedules, seedSessions };
 })(typeof window !== 'undefined' ? window : globalThis);

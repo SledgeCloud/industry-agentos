@@ -38,7 +38,14 @@
     const ra = d.agents.find(a => a.id === 'research-assistant');
     ra.versions[1].config.prompt += ' 回答前提示用户可按工序（高炉、烧结、焦化、球团）缩小检索范围。';
     ra.draft = copy(ra.versions[1].config);
-    state = { settings: { phase: 3, userId: 'u-wang' }, agents: d.agents, docs: d.docs, sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules, customTools: [], customSkills: [], seq: 1 };
+    state = {
+      settings: { phase: 3, userId: 'u-wang' },
+      agents: d.agents,
+      docs: d.docs,
+      folders: copy(d.folders || (AOS.folders ? AOS.folders.SEED_FOLDERS : [])),
+      sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules,
+      customTools: [], customSkills: [], seq: 1
+    };
     ensurePhase3();
     d.seedSessions.forEach(s => {
       const agent = state.agents.find(a => a.id === s.agentId);
@@ -54,6 +61,19 @@
     state.sessions.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
     state.audit.sort((a, b) => (a.time < b.time ? 1 : -1));
     return state;
+  }
+
+  function ensureFolders() {
+    const F = AOS.folders;
+    if (!F) return;
+    if (!Array.isArray(state.folders) || !state.folders.length) {
+      state.folders = copy(F.SEED_FOLDERS);
+    }
+    (state.docs || []).forEach(d => {
+      if (d.folderId == null || d.folderId === '') {
+        d.folderId = F.defaultFolderId(d);
+      }
+    });
   }
 
   function ensurePhase3() {
@@ -72,6 +92,7 @@
         a.updatedAt = now();
       }
     });
+    ensureFolders();
   }
 
   /* ---------- Service ---------- */
