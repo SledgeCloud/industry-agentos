@@ -213,8 +213,13 @@
       el.querySelectorAll('.card-more').forEach(d => {
         d.addEventListener('click', e => e.stopPropagation());
         d.addEventListener('toggle', () => {
-          if (!d.open) return;
-          el.querySelectorAll('.card-more[open]').forEach(o => { if (o !== d) o.open = false; });
+          if (!d.open) { ui.pinCardMore(d); return; }
+          el.querySelectorAll('.card-more[open]').forEach(o => {
+            if (o === d) return;
+            o.open = false;
+            ui.pinCardMore(o);
+          });
+          ui.pinCardMore(d);
         });
       });
       el.querySelector('#manageCats').addEventListener('click', manageCategories);

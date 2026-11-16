@@ -204,7 +204,9 @@
       }
       if (searching) trail += '<span class="sep">/</span><strong>搜索结果</strong>';
       el.querySelector('#kPath').innerHTML =
-        '<button type="button" class="btn sm kb-path-back" id="kBack"' + (canGoUp ? '' : ' disabled') + ' title="返回上一级" aria-label="返回上一级">' + icon('arrow-left') + '返回上一级</button>' +
+        (canGoUp
+          ? '<button type="button" class="btn icon sm kb-path-back" id="kBack" title="返回上一级" aria-label="返回上一级">' + icon('arrow-left') + '</button>'
+          : '') +
         '<div class="kb-path-trail">' + trail + '</div>';
 
       const body = [];
@@ -282,8 +284,13 @@
       }
       el.querySelectorAll('#kBody .card-more').forEach(d => {
         d.addEventListener('toggle', () => {
-          if (!d.open) return;
-          el.querySelectorAll('#kBody .card-more[open]').forEach(o => { if (o !== d) o.open = false; });
+          if (!d.open) { ui.pinCardMore(d); return; }
+          el.querySelectorAll('#kBody .card-more[open]').forEach(o => {
+            if (o === d) return;
+            o.open = false;
+            ui.pinCardMore(o);
+          });
+          ui.pinCardMore(d);
         });
       });
       ui.icons();
@@ -309,8 +316,8 @@
 
     el.innerHTML = '<div class="page"><div class="page-head"><div><h1>知识库</h1><p id="kLead">根目录只列出知识库。进入后管理文件夹与资料；资料密级和可见范围继承所属知识库。</p></div>' +
       '<div class="row"><button class="btn" type="button" id="newLibBtn" hidden>' + icon('library') + '新建知识库</button><button class="btn" type="button" id="newFolderBtn" hidden>' + icon('folder-plus') + '新建文件夹</button><button class="btn primary" type="button" id="uploadBtn" hidden>' + icon('upload') + '上传资料</button></div></div>' +
-      '<div class="tabs" id="kTabs" role="tablist" hidden></div><div id="kHidden"></div>' +
       '<nav class="kb-path" id="kPath" aria-label="知识库路径"></nav>' +
+      '<div class="tabs" id="kTabs" role="tablist" hidden></div><div id="kHidden"></div>' +
       '<div class="toolbar"><label class="search"><span class="sr-only">搜索</span>' + icon('search') + '<input class="input" id="kQ" placeholder="搜索知识库名称或描述" value="' + esc(f.q) + '"></label>' +
       '<select class="select" id="kProc" aria-label="工序" hidden><option value="">全部工序</option>' + PROCESSES.map(p => '<option' + (f.process === p ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>' +
       '<select class="select" id="kLevel" aria-label="密级"><option value="">全部密级</option>' + P.LEVELS.map(l => '<option value="' + l.id + '"' + (f.level === l.id ? ' selected' : '') + '>' + l.label + '</option>').join('') + '</select>' +

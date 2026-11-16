@@ -394,6 +394,37 @@
 
   function icons() { if (root.lucide) root.lucide.createIcons({ attrs: { 'stroke-width': 1.75 } }); }
 
+  function pinCardMore(details) {
+    const menu = details && details.querySelector('.card-more-menu');
+    if (!menu) return;
+    const clear = () => {
+      menu.classList.remove('is-fixed');
+      menu.style.top = '';
+      menu.style.left = '';
+      menu.style.right = '';
+      menu.style.bottom = '';
+    };
+    if (!details.open) { clear(); return; }
+    requestAnimationFrame(() => {
+      if (!details.open) return;
+      const btn = details.querySelector('summary') || details;
+      const r = btn.getBoundingClientRect();
+      menu.classList.add('is-fixed');
+      menu.style.top = '0';
+      menu.style.left = '0';
+      menu.style.right = 'auto';
+      const mw = menu.offsetWidth || 120;
+      const mh = menu.offsetHeight || 80;
+      let top = r.bottom + 4;
+      let left = r.right - mw;
+      if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 4);
+      if (left < 8) left = 8;
+      if (left + mw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - mw - 8);
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+    });
+  }
+
   function toast(text, tone) {
     let box = document.querySelector('.toasts');
     if (!box) { box = document.createElement('div'); box.className = 'toasts'; box.setAttribute('role', 'status'); document.body.appendChild(box); }
@@ -607,5 +638,5 @@
 
   AOS.store = store;
   AOS.svc = svc;
-  AOS.ui = { esc, icon, isImageIcon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, exportTurn };
+  AOS.ui = { esc, icon, isImageIcon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, pinCardMore, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, exportTurn };
 })(typeof window !== 'undefined' ? window : globalThis);
