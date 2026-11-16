@@ -19,19 +19,25 @@
     const pol = store.state.policy;
     const admin = isAdmin();
     function draw() {
-      const allowedOrgs = Object.keys(pol.internalToExternal).filter(o => pol.internalToExternal[o]);
+      const publicOk = P.publicEgressAllowed(pol);
+      const internalOk = P.internalEgressAllowed(pol);
+      const egressSwitch = (id, ok, label) => '<label class="egress-ctl"><span class="switch"><input type="checkbox" id="' + id + '"' + (ok ? ' checked' : '') + (admin ? '' : ' disabled') + ' aria-label="' + label + '"><span></span></span><span class="small">' + (ok ? '允许' : '禁止') + '</span></label>';
       el.innerHTML = '<div class="page"><div class="page-head"><div><h1>出网策略</h1><p>外网模型与厂内资料组合使用时，按资料密级决定能否发送。所有出网请求经出口网关审计。</p></div></div>' + adminNote() +
-        '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>密级与模型</h3></div><div class="table-wrap"><table class="tbl matrix"><thead><tr><th>资料密级</th><th>发给内网模型</th><th>发给外网模型</th></tr></thead><tbody>' +
-        '<tr><td>' + ui.lv('public') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge ok">允许</span></td></tr>' +
-        '<tr><td>' + ui.lv('internal') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge warn">按部门配置</span> <span class="small muted">' + (allowedOrgs.length ? esc(allowedOrgs.join('、')) + ' 允许' : '全部禁止') + '</span></td></tr>' +
+        '<div class="grid-2" style="align-items:start;margin-bottom:14px"><div class="panel"><div class="panel-head"><h3>密级与模型</h3></div><div class="table-wrap"><table class="tbl matrix"><thead><tr><th>资料密级</th><th>发给内网模型</th><th>发给外网模型</th></tr></thead><tbody>' +
+        '<tr><td>' + ui.lv('public') + '</td><td><span class="badge ok">允许</span></td><td>' + egressSwitch('publicEgress', publicOk, '允许公开资料发往外网模型') + '</td></tr>' +
+        '<tr><td>' + ui.lv('internal') + '</td><td><span class="badge ok">允许</span></td><td>' + egressSwitch('internalEgress', internalOk, '允许内部资料发往外网模型') + '</td></tr>' +
         '<tr><td>' + ui.lv('secret') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr>' +
-        '<tr><td>' + ui.lv('confidential') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr></tbody></table></div><div class="panel-body" style="padding-top:0"><span class="muted small">秘密及以上资料任何配置都不能发往外网模型。</span></div></div>' +
-        '<div class="grid-2" style="align-items:start"><div class="panel"><div class="panel-head"><h3>“内部”密级资料按部门配置</h3><span class="muted small">默认禁止</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>部门</th><th>允许发往外网模型</th></tr></thead><tbody>' +
-        Object.keys(pol.internalToExternal).map(o => '<tr><td>' + esc(o) + '</td><td><label class="switch"><input type="checkbox" data-org="' + esc(o) + '"' + (pol.internalToExternal[o] ? ' checked' : '') + (admin ? '' : ' disabled') + ' aria-label="' + esc(o) + ' 允许内部资料发往外网模型"><span></span></label></td></tr>').join('') + '</tbody></table></div></div>' +
+        '<tr><td>' + ui.lv('confidential') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr></tbody></table></div><div class="panel-body" style="padding-top:0"><span class="muted small">公开、内部密级可分别开关；秘密及以上任何配置都不能发往外网模型。</span></div></div>' +
         '<div class="panel"><div class="panel-head"><h3>敏感词</h3><span class="muted small">外网模型请求或联网检索命中即拦截</span></div><div class="panel-body"><div class="tag-edit">' + pol.sensitiveWords.map((w, i) => '<span class="tag">' + esc(w) + (admin ? '<button data-delword="' + i + '" aria-label="删除 ' + esc(w) + '">' + icon('x') + '</button>' : '') + '</span>').join('') + '</div>' +
         (admin ? '<div class="row" style="margin-top:12px"><input class="input" id="newWord" placeholder="添加敏感词，回车确认" style="max-width:260px"><button class="btn sm" id="addWord">添加</button></div>' : '') + '</div></div></div></div>';
       bindBeAdmin(el);
-      el.querySelectorAll('[data-org]').forEach(i => i.addEventListener('change', () => { pol.internalToExternal[i.dataset.org] = i.checked; store.save(); ui.toast(i.dataset.org + '：内部资料' + (i.checked ? '允许' : '禁止') + '发往外网模型'); draw(); }));
+      const bindEgress = (id, key, label) => {
+        const sw = el.querySelector('#' + id);
+        if (!sw) return;
+        sw.addEventListener('change', () => { pol[key] = sw.checked; store.save(); ui.toast(label + '：' + (sw.checked ? '允许' : '禁止')); draw(); });
+      };
+      bindEgress('publicEgress', 'publicToExternal', '公开资料发往外网模型');
+      bindEgress('internalEgress', 'internalToExternal', '内部资料发往外网模型');
       el.querySelectorAll('[data-delword]').forEach(b => b.addEventListener('click', () => { pol.sensitiveWords.splice(Number(b.dataset.delword), 1); store.save(); draw(); }));
       const add = () => { const i = el.querySelector('#newWord'); const w = i.value.trim(); if (!w) return; if (!pol.sensitiveWords.includes(w)) pol.sensitiveWords.push(w); store.save(); draw(); el.querySelector('#newWord').focus(); };
       const ab = el.querySelector('#addWord'); if (ab) { ab.addEventListener('click', add); el.querySelector('#newWord').addEventListener('keydown', e => { if (e.key === 'Enter') add(); }); }
@@ -112,7 +118,7 @@
       ui.icons();
     }
     function create() {
-      const agents = store.state.agents.filter(a => a.batch <= svc.phase() && (a.versions || []).some(v => v.status === 'online' || v.status === 'trial'));
+      const agents = store.state.agents.filter(a => a.batch <= svc.phase() && (a.versions || []).some(v => v.status === 'online'));
       ui.modal({
         title: '新建运行计划', okText: '创建计划',
         body: '<div class="stack"><div class="field"><label for="scName">名称</label><input class="input" id="scName" placeholder="例如：每周烧结技术动态"></div><div class="field"><label for="scAgent">智能体</label><select class="select" id="scAgent">' + agents.map(a => '<option value="' + a.id + '">' + esc(a.draft.name) + '</option>').join('') + '</select></div>' +
@@ -138,9 +144,9 @@
     AOS.setCrumbs([{ name: '管理' }, { name: '演示设置' }]);
     function draw() {
       const me = svc.currentUser();
-      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>演示设置</h1><p>切换演示用户。不同部门和密级看到的资料与出网策略不同。</p></div></div>' +
-        '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>演示用户</h3><span class="muted small">不同部门和密级会看到不同的资料，出网策略也按部门执行</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>用户</th><th>职务</th><th>部门</th><th>密级</th><th>“内部”资料可发往外网模型</th><th></th></tr></thead><tbody>' +
-        svc.users().map(u => '<tr><td><div class="row"><span class="avatar' + (u.id === me.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' + esc(u.name) + '</div></td><td>' + esc(u.title) + '</td><td>' + esc(u.dept) + '</td><td>' + ui.lv(u.clearance) + '</td><td>' + (P.egressAllowed('internal', u.dept, store.state.policy) ? '<span class="badge ok">允许</span>' : '<span class="badge">禁止</span>') + '</td><td>' + (u.id === me.id ? '<span class="muted small">当前用户</span>' : '<button class="btn sm" data-user="' + u.id + '">切换</button>') + '</td></tr>').join('') + '</tbody></table></div></div>' +
+      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>演示设置</h1><p>切换演示用户。不同部门和密级看到的资料范围不同；内部资料出网由全局策略统一控制。</p></div></div>' +
+        '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>演示用户</h3><span class="muted small">出网：公开 ' + (P.publicEgressAllowed(store.state.policy) ? '允许' : '禁止') + ' · 内部 ' + (P.internalEgressAllowed(store.state.policy) ? '允许' : '禁止') + '（在出网策略中配置）</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>用户</th><th>职务</th><th>部门</th><th>密级</th><th></th></tr></thead><tbody>' +
+        svc.users().map(u => '<tr><td><div class="row"><span class="avatar' + (u.id === me.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' + esc(u.name) + '</div></td><td>' + esc(u.title) + '</td><td>' + esc(u.dept) + '</td><td>' + ui.lv(u.clearance) + '</td><td>' + (u.id === me.id ? '<span class="muted small">当前用户</span>' : '<button class="btn sm" data-user="' + u.id + '">切换</button>') + '</td></tr>').join('') + '</tbody></table></div></div>' +
         '<div class="panel"><div class="panel-head"><h3>演示数据</h3></div><div class="panel-body row"><span class="grow muted">配置、资料、会话和审计记录保存在当前浏览器中。重置后恢复初始示例。</span><button class="btn danger" id="resetBtn">' + icon('rotate-ccw') + '重置演示数据</button></div></div></div>';
       el.querySelectorAll('[data-user]').forEach(b => b.addEventListener('click', () => { AOS.switchUser(b.dataset.user); }));
       el.querySelector('#resetBtn').addEventListener('click', async () => {

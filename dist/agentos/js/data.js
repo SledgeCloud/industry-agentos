@@ -84,7 +84,7 @@
     }
   ];
 
-  const v = (id, status, createdAt, note, extra) => Object.assign({ id, status, createdAt, note, trialUsers: [] }, extra || {});
+  const v = (id, status, createdAt, note, extra) => Object.assign({ id, status, createdAt, note }, extra || {});
 
   const agents = [
     {
@@ -95,7 +95,7 @@
       tools: ['doc_search', 'cad_search', 'code_search', 'db_query', 'web_search', 'web_fetch'],
       opening: '可以直接提问，也可以切换到“资料检索”模式查找报告原件或图纸。',
       suggestions: ['2号高炉低硅冶炼的主要措施有哪些？', '烧结矿转鼓强度下降一般是什么原因？', '找一下2号高炉冷却壁布置图', '近一个月2号高炉焦比和煤比的变化'],
-      versions: [v('v1.0', 'online', '2026-10-20 10:00', '首次上线'), v('v1.1', 'trial', '2026-11-05 16:30', '回答增加工序筛选提示', { trialUsers: ['王建国', '李敏'] })]
+      versions: [v('v1.0', 'archived', '2026-10-20 10:00', '首次上线'), v('v1.1', 'online', '2026-11-05 16:30', '回答增加工序筛选提示')]
     },
     {
       id: 'standard-query', name: '标准规范查询助手', category: 'knowledge', icon: 'scale', flow: 'qa', template: 'qa', batch: 2,
@@ -197,7 +197,7 @@
       tools: ['web_search', 'web_fetch', 'report_export'],
       opening: '输入跟踪主题、关注对象和时间范围（默认上一个自然月）。',
       suggestions: ['跟踪上月高炉低碳冶炼和氢冶金技术动态', '跟踪上月烧结烟气治理技术动态'],
-      versions: [v('v0.9', 'trial', '2026-11-03 14:00', '手动版试用', { trialUsers: ['张涛', '王建国'] })]
+      versions: [v('v0.9', 'online', '2026-11-03 14:00', '首次发布')]
     }
   ];
 
@@ -333,7 +333,8 @@
   ];
 
   const policy = {
-    internalToExternal: { '炼铁技术中心': false, '科技管理部': false, '科技情报室': true, '信息中心': false, '高炉车间': false, '烧结车间': false },
+    publicToExternal: true,
+    internalToExternal: false,
     sensitiveWords: ['炉料配方', '配比参数', '绝密', '富氢喷吹工业试验方案']
   };
 
@@ -353,7 +354,7 @@
 
   const skills = [
     { id: 'cite-first', name: '先引用后结论', icon: 'quote', category: '回答规范', desc: '回答前先检索并标注引用编号，结论必须对应可核验来源；无来源时明确说明。', trigger: '问答、查新、诊断类智能体', status: 'published' },
-    { id: 'clearance-guard', name: '密级出网护栏', icon: 'shield-check', category: '安全合规', desc: '外网模型场景下再次核对资料密级与部门出网策略，拦截秘密及以上内容并给出可改用内网模型的提示。', trigger: '所有开放外网模型的智能体', status: 'published' },
+    { id: 'clearance-guard', name: '密级出网护栏', icon: 'shield-check', category: '安全合规', desc: '外网模型场景下再次核对资料密级与出网策略，拦截秘密及以上内容并给出可改用内网模型的提示。', trigger: '所有开放外网模型的智能体', status: 'published' },
     { id: 'process-scope', name: '工序范围收窄', icon: 'filter', category: '检索策略', desc: '先确认高炉 / 烧结 / 焦化 / 球团等工序，再缩小检索范围，避免跨工序混用结论。', trigger: '科研资料助手、工艺诊断', status: 'published' },
     { id: 'outline-confirm', name: '大纲确认再撰写', icon: 'list-tree', category: '报告流程', desc: '报告类任务先给出可勾选大纲，用户确认后再分章节检索与撰写，并支持导出。', trigger: '调研报告、申报书、交底书', status: 'published' },
     { id: 'novelty-two-pass', name: '查新双阶段', icon: 'search-check', category: '报告流程', desc: '先做厂内课题库与公开文献初检，确认范围后再生成查新结论与对比表。', trigger: '立项查新助手', status: 'published' },

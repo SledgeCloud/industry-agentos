@@ -231,7 +231,7 @@
 
   function shell() {
     document.getElementById('app').innerHTML =
-      '<div class="app"><aside class="side" aria-label="主导航"><div class="brand"><div class="brand-mark">' + icon('flame') + '</div><div><div class="brand-name">AgentOS</div><div class="brand-sub">炼铁厂智能体平台</div></div></div>' +
+      '<div class="app"><aside class="side" aria-label="主导航"><div class="brand"><div class="brand-mark">' + icon('flame') + '</div><div><div class="brand-name">AgentOS</div><div class="brand-sub">工业智能体平台</div></div></div>' +
       '<nav class="nav" id="nav"></nav></aside>' +
       '<div class="main"><header class="topbar"><div class="crumbs" id="crumbs"></div><div class="spacer"></div>' +
       '<div class="topbar-actions">' +

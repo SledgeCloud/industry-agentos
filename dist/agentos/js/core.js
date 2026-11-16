@@ -8,8 +8,15 @@
   const fmt = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   const now = () => fmt(new Date());
 
-  const CONFIG_KEYS = ['name', 'category', 'desc', 'icon', 'template', 'prompt', 'allowedModels', 'defaultModel', 'defaultScope', 'tools', 'toolParams', 'opening', 'suggestions'];
-  const pickConfig = a => { const o = {}; CONFIG_KEYS.forEach(k => { o[k] = copy(a[k] === undefined ? (k === 'toolParams' ? {} : k === 'suggestions' || k === 'tools' ? [] : '') : a[k]); }); return o; };
+  const CONFIG_KEYS = ['name', 'category', 'desc', 'icon', 'prompt', 'allowedModels', 'defaultModel', 'defaultScope', 'tools', 'toolDisabled', 'toolParams', 'skills', 'skillDisabled', 'opening', 'suggestions'];
+  const pickConfig = a => {
+    const o = {};
+    CONFIG_KEYS.forEach(k => {
+      const empty = k === 'toolParams' ? {} : (k === 'suggestions' || k === 'tools' || k === 'toolDisabled' || k === 'skills' || k === 'skillDisabled' ? [] : '');
+      o[k] = copy(a[k] === undefined ? empty : a[k]);
+    });
+    return o;
+  };
 
   /* ---------- Store ---------- */
   let state = null;
@@ -43,6 +50,7 @@
       agents: d.agents,
       docs: d.docs,
       folders: copy(d.folders || (AOS.folders ? AOS.folders.SEED_FOLDERS : [])),
+      categories: copy(d.categories || []),
       sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules,
       customTools: [], customSkills: [], seq: 1
     };
@@ -76,6 +84,21 @@
     });
   }
 
+  function ensurePolicyShape() {
+    if (!state.policy) state.policy = copy(AOS.data.policy);
+    const inn = state.policy.internalToExternal;
+    if (typeof inn !== 'boolean') {
+      if (inn && typeof inn === 'object') {
+        state.policy.internalToExternal = Object.keys(inn).some(k => inn[k] === true);
+      } else {
+        state.policy.internalToExternal = false;
+      }
+    }
+    if (typeof state.policy.publicToExternal !== 'boolean') {
+      state.policy.publicToExternal = true;
+    }
+  }
+
   function ensurePhase3() {
     if (!state.settings) state.settings = { userId: 'u-wang' };
     state.settings.phase = 3;
@@ -88,11 +111,26 @@
     });
     (state.agents || []).forEach(a => {
       if (!a.custom && a.batch <= 3 && !(a.versions || []).length) {
-        a.versions = [{ id: 'v1.0', status: 'online', createdAt: now(), note: '三期演示上线', trialUsers: [], config: copy(a.draft) }];
+        a.versions = [{ id: 'v1.0', status: 'online', createdAt: now(), note: '三期演示上线', config: copy(a.draft) }];
         a.updatedAt = now();
       }
+      (a.versions || []).forEach(v => {
+        if (v.status === 'trial') {
+          const hasOnline = (a.versions || []).some(x => x.status === 'online');
+          v.status = hasOnline ? 'archived' : 'online';
+        }
+        delete v.trialUsers;
+      });
     });
     ensureFolders();
+    ensurePolicyShape();
+    ensureCategories();
+  }
+
+  function ensureCategories() {
+    if (!Array.isArray(state.categories) || !state.categories.length) {
+      state.categories = copy(AOS.data.categories || []);
+    }
   }
 
   /* ---------- Service ---------- */
@@ -101,6 +139,7 @@
     users,
     currentUser() { return users().find(u => u.id === state.settings.userId) || users()[0]; },
     agent(id) { return state.agents.find(a => a.id === id); },
+    categories() { return state.categories || []; },
     toolsCatalog() {
       const builtin = (AOS.data.tools || []).map(t => Object.assign({}, t, { source: 'builtin' }));
       const custom = (state.customTools || []).map(t => Object.assign({}, t, { source: 'custom' }));
@@ -185,14 +224,13 @@
       store.save();
       return { ok: true };
     },
-    category(id) { return AOS.data.categories.find(c => c.id === id) || { id, name: '未分类', icon: 'box' }; },
+    category(id) { return svc.categories().find(c => c.id === id) || { id, name: '未分类', icon: 'box' }; },
     phase() { return 3; },
     PHASE_LABEL: ['', '一期', '二期', '三期'],
     portalStatus(agent) {
       if (agent.batch > svc.phase()) return 'planned';
       const vs = agent.versions || [];
       if (vs.some(v => v.status === 'online')) return 'online';
-      if (vs.some(v => v.status === 'trial')) return 'trial';
       if (vs.some(v => v.status === 'offline')) return 'offline';
       return 'draft';
     },
@@ -200,11 +238,8 @@
       const phase = svc.phase();
       if (agent.batch > phase) return { ok: false, status: 'planned', reason: '该智能体计划在' + svc.PHASE_LABEL[agent.batch] + '上线' };
       const vs = agent.versions || [];
-      const trial = vs.slice().reverse().find(v => v.status === 'trial');
       const online = vs.slice().reverse().find(v => v.status === 'online');
-      if (trial && trial.trialUsers.includes(user.name)) return { ok: true, status: 'trial', version: trial };
       if (online) return { ok: true, status: 'online', version: online };
-      if (trial) return { ok: false, status: 'trial', reason: '试用中，仅限试用人员使用：' + trial.trialUsers.join('、') };
       if (vs.some(v => v.status === 'offline')) return { ok: false, status: 'offline', reason: '该智能体已下线，历史会话仍可在会话记录中查看' };
       return { ok: false, status: 'draft', reason: '该智能体尚未发布' };
     },
@@ -273,9 +308,16 @@
 
   /* ---------- UI helpers ---------- */
   const esc = s => String(s === undefined || s === null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const icon = (name, cls) => '<i data-lucide="' + name + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-hidden="true"></i>';
+  function isImageIcon(name) {
+    const s = String(name || '');
+    return s.startsWith('data:image/') || s.startsWith('blob:') || /^https?:\/\//i.test(s);
+  }
+  const icon = (name, cls) => {
+    if (isImageIcon(name)) return '<img src="' + esc(name) + '" class="icon-img' + (cls ? ' ' + cls : '') + '" alt="" aria-hidden="true">';
+    return '<i data-lucide="' + esc(name || 'box') + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-hidden="true"></i>';
+  };
   const lv = level => '<span class="lv lv-' + level + '">' + P.levelLabel(level) + '</span>';
-  const STATUS = { online: '已上线', trial: '试用中', draft: '草稿', offline: '已下线', planned: '规划中', archived: '已归档' };
+  const STATUS = { online: '已上线', draft: '草稿', offline: '已下线', planned: '规划中', archived: '已归档' };
   const status = s => '<span class="status ' + s + '">' + (STATUS[s] || s) + '</span>';
   const zoneBadge = z => z === 'external' ? '<span class="badge ext">' + icon('globe') + '外网模型</span>' : '<span class="badge dark">' + icon('shield-check') + '内网模型</span>';
   const TYPE_ICON = { pdf: 'file-text', word: 'file-type', cad: 'drafting-compass', code: 'code', db: 'database' };
@@ -497,5 +539,5 @@
 
   AOS.store = store;
   AOS.svc = svc;
-  AOS.ui = { esc, icon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, exportTurn };
+  AOS.ui = { esc, icon, isImageIcon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, exportTurn };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -490,7 +490,7 @@
       return { turn: finish(c), state: c.state };
     }
     if (!gatewayCheck(c)) {
-      const flow = c.agent.flow || (c.agent.template === 'report' ? 'report' : 'qa');
+      const flow = c.agent.flow || 'qa';
       if (flow === 'survey' || flow === 'report') reportFlow(c);
       else if (flow === 'novelty') noveltyFlow(c);
       else if (flow === 'intel') intelFlow(c);

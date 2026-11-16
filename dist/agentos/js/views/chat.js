@@ -15,13 +15,14 @@
 
   function egressConfirm() {
     const user = svc.currentUser();
+    const publicOk = P.egressAllowed('public', user.dept, store.state.policy);
     const internalOk = P.egressAllowed('internal', user.dept, store.state.policy);
     const row = (lvId, ok) => '<tr><td>' + ui.lv(lvId) + '</td><td>' + (ok ? '<span class="badge ok">发送</span>' : '<span class="badge danger">不发送</span>') + '</td></tr>';
     return ui.confirm({
       title: '确认将厂内资料用于外网模型',
       okText: '确认并发送',
-      body: '<p style="margin-bottom:10px">你选择了<b>外网模型</b>，且资料范围包含<b>厂内资料</b>。按“' + esc(user.dept) + '”的出网策略，检索到的资料按密级处理如下：</p>' +
-        '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>资料密级</th><th>发给外网模型</th></tr></thead><tbody>' + row('public', true) + row('internal', internalOk) + row('secret', false) + row('confidential', false) + '</tbody></table></div>' +
+      body: '<p style="margin-bottom:10px">你选择了<b>外网模型</b>，且资料范围包含<b>厂内资料</b>。按当前出网策略，检索到的资料按密级处理如下：</p>' +
+        '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>资料密级</th><th>发给外网模型</th></tr></thead><tbody>' + row('public', publicOk) + row('internal', internalOk) + row('secret', false) + row('confidential', false) + '</tbody></table></div>' +
         '<p class="muted small" style="margin-top:10px">被拦截的资料不会进入外网模型；实际发出的资料清单会记录在会话记录和审计日志中。本次对话只确认一次。</p>'
     });
   }

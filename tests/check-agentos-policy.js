@@ -9,7 +9,9 @@ vm.runInContext(fs.readFileSync('dist/agentos/js/policy.js', 'utf8'), context);
 const P = context.AOS.policy;
 const copy = value => JSON.parse(JSON.stringify(value));
 
-const policy = { internalToExternal: { '炼铁技术中心': false, '科技情报室': true }, sensitiveWords: ['炉料配方', '绝密'] };
+const policyOff = { publicToExternal: true, internalToExternal: false, sensitiveWords: ['炉料配方', '绝密'] };
+const policyOn = { publicToExternal: true, internalToExternal: true, sensitiveWords: ['炉料配方', '绝密'] };
+const policyNoPublic = { publicToExternal: false, internalToExternal: true, sensitiveWords: ['炉料配方', '绝密'] };
 const wang = { id: 'u1', dept: '炼铁技术中心', clearance: 'secret' };
 const zhang = { id: 'u2', dept: '科技情报室', clearance: 'internal' };
 
@@ -25,24 +27,34 @@ assert.equal(P.canView(zhang, { level: 'secret', acl: [] }), false);
 assert.equal(P.canView(zhang, { level: 'internal', acl: ['炼铁技术中心'] }), false, 'ACL restricts departments');
 assert.equal(P.canView(wang, { level: 'internal', acl: ['炼铁技术中心'] }), true);
 
-// Egress: public always, internal per org (default deny), secret and above never.
-assert.equal(P.egressAllowed('public', '炼铁技术中心', policy), true);
-assert.equal(P.egressAllowed('internal', '炼铁技术中心', policy), false);
-assert.equal(P.egressAllowed('internal', '科技情报室', policy), true);
-assert.equal(P.egressAllowed('internal', '未配置部门', policy), false, 'Unconfigured org defaults to deny');
-assert.equal(P.egressAllowed('secret', '科技情报室', { internalToExternal: { '科技情报室': true } }), false);
-assert.equal(P.egressAllowed('confidential', '科技情报室', policy), false);
+// Egress: public/internal global switches, secret and above never.
+assert.equal(P.egressAllowed('public', '炼铁技术中心', policyOff), true);
+assert.equal(P.egressAllowed('public', '炼铁技术中心', policyNoPublic), false);
+assert.equal(P.egressAllowed('public', 'x', {}), true, 'Missing public flag defaults to allow');
+assert.equal(P.egressAllowed('internal', '炼铁技术中心', policyOff), false);
+assert.equal(P.egressAllowed('internal', '科技情报室', policyOff), false);
+assert.equal(P.egressAllowed('internal', '炼铁技术中心', policyOn), true);
+assert.equal(P.egressAllowed('internal', '任意部门', policyOn), true);
+assert.equal(P.egressAllowed('secret', '科技情报室', policyOn), false);
+assert.equal(P.egressAllowed('confidential', '科技情报室', policyOn), false);
+assert.equal(P.internalEgressAllowed({ internalToExternal: { '科技情报室': true, '炼铁技术中心': false } }), true, 'Legacy map migrates as any-allowed');
+assert.equal(P.internalEgressAllowed({ internalToExternal: { a: false } }), false);
+assert.equal(P.publicEgressAllowed({ publicToExternal: false }), false);
+assert.equal(P.publicEgressAllowed({}), true);
 
 const docs = [{ id: 'a', level: 'public' }, { id: 'b', level: 'internal' }, { id: 'c', level: 'secret' }];
-let split = P.partitionForModel(docs, 'internal', '炼铁技术中心', policy);
+let split = P.partitionForModel(docs, 'internal', '炼铁技术中心', policyOff);
 assert.deepEqual(copy(split.allowed.map(d => d.id)), ['a', 'b', 'c'], 'Internal model receives everything');
 assert.equal(split.blocked.length, 0);
-split = P.partitionForModel(docs, 'external', '炼铁技术中心', policy);
+split = P.partitionForModel(docs, 'external', '炼铁技术中心', policyOff);
 assert.deepEqual(copy(split.allowed.map(d => d.id)), ['a']);
 assert.deepEqual(copy(split.blocked.map(d => d.id)), ['b', 'c']);
-split = P.partitionForModel(docs, 'external', '科技情报室', policy);
+split = P.partitionForModel(docs, 'external', '科技情报室', policyOn);
 assert.deepEqual(copy(split.allowed.map(d => d.id)), ['a', 'b']);
 assert.deepEqual(copy(split.blocked.map(d => d.id)), ['c']);
+split = P.partitionForModel(docs, 'external', 'x', policyNoPublic);
+assert.deepEqual(copy(split.allowed.map(d => d.id)), ['b']);
+assert.deepEqual(copy(split.blocked.map(d => d.id)), ['a', 'c']);
 
 // Scope decides which tool groups are callable; output tools are never restricted.
 const catalog = [
@@ -62,16 +74,19 @@ assert.equal(P.isLocked({ allowedModels: ['internal', 'external'] }), false);
 assert.equal(P.isLocked({ allowedModels: ['external'] }), false, 'Only an internal-only agent counts as locked');
 
 // Sensitive word detection returns the first hit.
-assert.equal(P.findSensitive('请给出炉料配方细节', policy.sensitiveWords), '炉料配方');
-assert.equal(P.findSensitive('高炉利用系数', policy.sensitiveWords), null);
+assert.equal(P.findSensitive('请给出炉料配方细节', policyOff.sensitiveWords), '炉料配方');
+assert.equal(P.findSensitive('高炉利用系数', policyOff.sensitiveWords), null);
 
 // Data flow summary used by the composer.
-assert.equal(P.dataFlow('internal', 'internal', '炼铁技术中心', policy).egress, false);
-assert.equal(P.dataFlow('internal', 'all', '炼铁技术中心', policy).egress, true, 'Web search leaves the network even with an internal model');
-assert.equal(P.dataFlow('external', 'public', '炼铁技术中心', policy).tone, 'external');
-const risky = P.dataFlow('external', 'internal', '炼铁技术中心', policy);
+assert.equal(P.dataFlow('internal', 'internal', '炼铁技术中心', policyOff).egress, false);
+assert.equal(P.dataFlow('internal', 'all', '炼铁技术中心', policyOff).egress, true, 'Web search leaves the network even with an internal model');
+assert.equal(P.dataFlow('external', 'public', '炼铁技术中心', policyOff).tone, 'external');
+const risky = P.dataFlow('external', 'internal', '炼铁技术中心', policyOff);
 assert.equal(risky.tone, 'warn');
 assert.equal(risky.needsConfirm, true);
-assert.equal(P.dataFlow('external', 'public', '炼铁技术中心', policy).needsConfirm, false);
+assert.equal(P.dataFlow('external', 'public', '炼铁技术中心', policyOff).needsConfirm, false);
+assert.match(P.dataFlow('external', 'internal', 'x', policyOn).note, /公开、内部资料可发送/);
+assert.match(P.dataFlow('external', 'internal', 'x', policyOff).note, /只发送公开资料/);
+assert.match(P.dataFlow('external', 'internal', 'x', policyNoPublic).note, /只发送内部资料/);
 
 console.log('check-agentos-policy: ok');
