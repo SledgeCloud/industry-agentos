@@ -85,7 +85,7 @@
     const scored = pool.map(d => ({ d, s: score(d.keywords, text) + score([d.process, d.topic], text) }));
     const top = Math.max(0, ...scored.map(x => x.s));
     const ranked = scored.filter(x => x.s > 0 && x.s >= Math.max(top > 2 ? 2 : 1, top * 0.6)).sort((a, b) => b.s - a.s || b.d.year - a.d.year);
-    const visible = ranked.filter(x => P.canView(c.user, x.d));
+    const visible = ranked.filter(x => P.canView(c.user, x.d, c.libraries));
     const hidden = ranked.length - visible.length;
     c.out.filteredAcl += hidden;
     const hits = visible.slice(0, topK).map(x => x.d);
@@ -142,7 +142,7 @@
     if (!c.has('db_query')) { const r = unavailableReason(c, 'db_query'); if (r) c.out.notices.push({ tone: 'info', text: r }); return null; }
     const project = /课题|项目|指标|验收|经费/.test(text);
     const db = c.docs.find(d => d.id === (project ? 'b02' : 'b01'));
-    if (!db || !P.canView(c.user, db)) { addStep(c, 'db_query', {}, 'empty', '无权访问相关数据表'); return null; }
+    if (!db || !P.canView(c.user, db, c.libraries)) { addStep(c, 'db_query', {}, 'empty', '无权访问相关数据表'); return null; }
     let result;
     if (project) {
       const sql = "SELECT project_no, name, owner, status, budget FROM project WHERE name LIKE '%炉温%' LIMIT " + c.param('db_query', 'maxRows');

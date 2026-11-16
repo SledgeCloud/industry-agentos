@@ -25,9 +25,28 @@
   const scopeLabel = id => (SCOPES.find(s => s.id === id) || SCOPES[0]).label;
   const zoneLabel = id => (ZONES.find(z => z.id === id) || ZONES[0]).label;
 
-  function canView(user, doc) {
+  function canViewLegacy(user, doc) {
     if (levelRank(doc.level) > levelRank(user.clearance)) return false;
     return !doc.acl || doc.acl.length === 0 || doc.acl.includes(user.dept);
+  }
+
+  function librariesFromStore() {
+    const store = AOS.store;
+    return store && store.state && store.state.libraries;
+  }
+
+  function canView(user, doc, libraries) {
+    if (!user || !doc) return false;
+    const libs = libraries == null ? librariesFromStore() : libraries;
+    const L = AOS.libraries;
+    if (doc.libraryId && libs && L && typeof L.byId === 'function') {
+      const library = L.byId(libs, doc.libraryId);
+      if (library) {
+        if (levelRank(user.clearance) < levelRank(library.level)) return false;
+        return !!(L.canRead && L.canRead(library, user));
+      }
+    }
+    return canViewLegacy(user, doc);
   }
 
   function flagOrLegacy(policy, key, legacyObjectAnyTrue, defaultValue) {

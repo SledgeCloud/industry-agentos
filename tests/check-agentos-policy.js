@@ -6,6 +6,7 @@ const context = { console };
 for (const key of ['document', 'localStorage', 'fetch']) Object.defineProperty(context, key, { get() { throw new Error('Pure policy touched ' + key); } });
 context.window = context; vm.createContext(context);
 vm.runInContext(fs.readFileSync('dist/agentos/js/policy.js', 'utf8'), context);
+vm.runInContext(fs.readFileSync('dist/agentos/js/libraries.js', 'utf8'), context);
 const P = context.AOS.policy;
 const copy = value => JSON.parse(JSON.stringify(value));
 
@@ -26,6 +27,26 @@ assert.equal(P.canView(wang, { level: 'confidential', acl: [] }), false, 'Cleara
 assert.equal(P.canView(zhang, { level: 'secret', acl: [] }), false);
 assert.equal(P.canView(zhang, { level: 'internal', acl: ['炼铁技术中心'] }), false, 'ACL restricts departments');
 assert.equal(P.canView(wang, { level: 'internal', acl: ['炼铁技术中心'] }), true);
+
+// Library grants replace doc.level + acl when the document's library resolves.
+const libs = [{
+  id: 'lib-report', name: '科研报告库', level: 'internal',
+  grants: [
+    { type: 'dept', id: '炼铁技术中心', role: 'edit' },
+    { type: 'user', id: 'u-chen', role: 'manage' }
+  ]
+}];
+const li = { id: 'u-li', dept: '科技管理部', clearance: 'internal' };
+const doc = { id: 'd1', libraryId: 'lib-report', level: 'internal', acl: [] };
+assert.equal(P.canView(wang, doc, libs), true);
+assert.equal(P.canView(li, doc, libs), false);
+assert.equal(P.canView({ id: 'u-low', dept: '炼铁技术中心', clearance: 'public' }, doc, libs), false, 'Clearance must meet the library level');
+assert.equal(P.canView(wang, { id: 'd2', libraryId: 'missing', level: 'internal', acl: ['炼铁技术中心'] }, libs), true, 'Missing library falls back to doc ACL');
+assert.equal(P.canView(li, { id: 'd2', libraryId: 'missing', level: 'internal', acl: ['炼铁技术中心'] }, libs), false, 'Missing library falls back to doc ACL');
+context.AOS.store = { state: { libraries: libs } };
+assert.equal(P.canView(wang, doc), true, 'Omitted libraries resolve from AOS.store');
+assert.equal(P.canView(li, doc), false, 'Omitted libraries resolve from AOS.store');
+delete context.AOS.store;
 
 // Egress: public/internal global switches, secret and above never.
 assert.equal(P.egressAllowed('public', '炼铁技术中心', policyOff), true);

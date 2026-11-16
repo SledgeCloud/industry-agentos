@@ -33,6 +33,7 @@
     if (a === 'knowledge') return { view: 'knowledge', nav: 'knowledge' };
     if (a === 'sessions') return b ? { view: 'sessionDetail', nav: 'sessions', sessionId: b } : { view: 'sessions', nav: 'sessions' };
     if (a === 'admin') return { view: b || 'policy', nav: b || 'policy' };
+    if (a === 'org') return { view: 'org', nav: 'org', orgPage: b || 'directory' };
     return { view: 'portal', nav: 'portal' };
   }
 
@@ -282,6 +283,7 @@
       const demo = t.dataset.demo;
       closeAcctMenu();
       if (demo === 'profile') { location.hash = '#/admin/settings'; return; }
+      if (demo === 'org') { location.hash = '#/org'; return; }
       if (demo === 'logout') { ui.toast('演示环境无需退出登录'); return; }
       ui.toast('演示环境暂未接入该功能');
     });

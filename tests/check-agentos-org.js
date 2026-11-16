@@ -1,0 +1,18 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = { console }; context.window = context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('dist/agentos/js/org.js', 'utf8'), context);
+const O = context.AOS.org;
+assert.ok(O.PERMS.KB_CREATE === 'kb.create');
+assert.ok(O.SEED_ROLES.some(r => r.id === 'role-admin'));
+assert.ok(O.SEED_DEPARTMENTS.some(d => d.name === '炼铁技术中心'));
+const roles = O.SEED_ROLES;
+const admin = { id: 'u-chen', roleIds: ['role-admin'] };
+const member = { id: 'u-wang', roleIds: ['role-member'] };
+assert.equal(O.userHasPerm(admin, roles, 'kb.create'), true);
+assert.equal(O.userHasPerm(member, roles, 'kb.create'), false);
+assert.equal(O.userHasPerm(member, roles, 'org.manage'), false);
+assert.equal(O.userHasPerm(admin, roles, 'org.manage'), true);
+console.log('check-agentos-org: ok');

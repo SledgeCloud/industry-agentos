@@ -34,3 +34,5 @@
 **/*.log
 **/*.bak
 **/*~
+
+.worktrees/

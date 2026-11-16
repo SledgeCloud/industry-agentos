@@ -3,13 +3,11 @@
   const AOS = root.AOS || (root.AOS = {});
 
   const users = [
-    { id: 'u-wang', name: '王建国', title: '高级工程师', dept: '炼铁技术中心', clearance: 'secret' },
-    { id: 'u-li', name: '李敏', title: '科研项目主管', dept: '科技管理部', clearance: 'internal' },
-    { id: 'u-zhang', name: '张涛', title: '情报研究员', dept: '科技情报室', clearance: 'internal' },
-    { id: 'u-chen', name: '陈晓', title: '平台管理员', dept: '信息中心', clearance: 'confidential' }
+    { id: 'u-wang', name: '王建国', title: '高级工程师', dept: '炼铁技术中心', clearance: 'secret', roleIds: ['role-member'] },
+    { id: 'u-li', name: '李敏', title: '科研项目主管', dept: '科技管理部', clearance: 'internal', roleIds: ['role-member'] },
+    { id: 'u-zhang', name: '张涛', title: '情报研究员', dept: '科技情报室', clearance: 'internal', roleIds: ['role-member'] },
+    { id: 'u-chen', name: '陈晓', title: '平台管理员', dept: '信息中心', clearance: 'confidential', roleIds: ['role-admin'] }
   ];
-
-  const orgs = ['炼铁技术中心', '科技管理部', '科技情报室', '信息中心', '高炉车间', '烧结车间'];
 
   const categories = [
     { id: 'knowledge', name: '资料查询与知识管理', icon: 'library' },
@@ -396,12 +394,31 @@
     { id: 'meeting-minutes', name: '技术例会纪要', icon: 'notebook-pen', category: '报告流程', desc: '将讨论要点整理为决议、待办与负责人三栏纪要。', trigger: '工作流型智能体', status: 'published' }
   ];
 
-  const folders = (AOS.folders && AOS.folders.SEED_FOLDERS)
-    ? AOS.folders.SEED_FOLDERS.map(f => Object.assign({}, f))
-    : [];
+  const clone = v => JSON.parse(JSON.stringify(v));
+  const departments = (AOS.org && AOS.org.SEED_DEPARTMENTS) ? clone(AOS.org.SEED_DEPARTMENTS) : [];
+  const roles = (AOS.org && AOS.org.SEED_ROLES) ? clone(AOS.org.SEED_ROLES) : [];
+  const libraries = (AOS.libraries && AOS.libraries.SEED_LIBRARIES) ? clone(AOS.libraries.SEED_LIBRARIES) : [];
+  const orgs = departments.map(d => d.name);
+  const folders = (AOS.folders && AOS.folders.SEED_FOLDERS) ? clone(AOS.folders.SEED_FOLDERS) : [];
+  const folderById = id => folders.find(f => f.id === id);
+
   docs.forEach(d => {
-    if (d.folderId == null && AOS.folders) d.folderId = AOS.folders.defaultFolderId(d);
+    if (!d) return;
+    const folderMissing = d.folderId == null || d.folderId === '';
+    const libraryMissing = d.libraryId == null || d.libraryId === '';
+    if (folderMissing && libraryMissing && AOS.folders) d.folderId = AOS.folders.defaultFolderId(d);
+    if (!d.libraryId) {
+      const folder = d.folderId ? folderById(d.folderId) : null;
+      const fromFolder = folder && folder.libraryId;
+      const fromName = AOS.libraries && AOS.libraries.mapLegacyTopFolderToLibraryId(d.library);
+      if (fromFolder) d.libraryId = fromFolder;
+      else if (fromName) d.libraryId = fromName;
+    }
+    if (AOS.libraries && d.libraryId) {
+      const lib = AOS.libraries.byId(libraries, d.libraryId);
+      if (lib) AOS.libraries.syncDocFromLibrary(d, lib);
+    }
   });
 
-  AOS.data = { users, orgs, categories, tools, skills, mcpMarket, skillMarket, agents, docs, folders, web, models, policy, schedules, seedSessions };
+  AOS.data = { users, orgs, departments, roles, libraries, categories, tools, skills, mcpMarket, skillMarket, agents, docs, folders, web, models, policy, schedules, seedSessions };
 })(typeof window !== 'undefined' ? window : globalThis);

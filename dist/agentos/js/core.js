@@ -50,6 +50,9 @@
       agents: d.agents,
       docs: d.docs,
       folders: copy(d.folders || (AOS.folders ? AOS.folders.SEED_FOLDERS : [])),
+      departments: copy(d.departments || []),
+      roles: copy(d.roles || []),
+      libraries: copy(d.libraries || []),
       categories: copy(d.categories || []),
       sessions: [], audit: [], policy: d.policy, models: d.models, schedules: d.schedules,
       customTools: [], customSkills: [], seq: 1
@@ -71,6 +74,63 @@
     return state;
   }
 
+  function ensureOrg() {
+    const O = AOS.org;
+    if (!O) return;
+    if (!Array.isArray(state.departments) || !state.departments.length) {
+      state.departments = copy(O.SEED_DEPARTMENTS);
+    }
+    if (!Array.isArray(state.roles) || !state.roles.length) {
+      state.roles = copy(O.SEED_ROLES);
+    }
+    (AOS.data.users || []).forEach(u => {
+      if (!u) return;
+      if (!Array.isArray(u.roleIds) || !u.roleIds.length) {
+        u.roleIds = u.id === 'u-chen' ? ['role-admin'] : ['role-member'];
+      }
+      const copies = Array.isArray(state.users) ? state.users.filter(x => x && x.id === u.id) : [];
+      copies.forEach(x => { x.roleIds = u.roleIds.slice(); });
+    });
+  }
+
+  function libraryIdForFolder(folder, byId, L) {
+    let cur = folder;
+    const seen = new Set();
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      if (cur.libraryId) return cur.libraryId;
+      const mapped = L.mapLegacyTopFolderToLibraryId(cur.id) || L.mapLegacyTopFolderToLibraryId(cur.name);
+      if (mapped) return mapped;
+      if (cur.parentId == null || cur.parentId === '') return null;
+      cur = byId[cur.parentId];
+    }
+    return null;
+  }
+
+  function ensureLibraries() {
+    const L = AOS.libraries;
+    if (!L) return;
+    if (!Array.isArray(state.libraries) || !state.libraries.length) {
+      state.libraries = copy(L.SEED_LIBRARIES);
+    }
+    const byId = {};
+    (state.folders || []).forEach(f => { if (f && f.id) byId[f.id] = f; });
+    (state.folders || []).forEach(f => {
+      if (!f || f.libraryId) return;
+      const id = libraryIdForFolder(f, byId, L);
+      if (id) f.libraryId = id;
+    });
+    (state.docs || []).forEach(d => {
+      if (!d) return;
+      if (!d.libraryId) {
+        const folder = d.folderId ? byId[d.folderId] : null;
+        d.libraryId = (folder && libraryIdForFolder(folder, byId, L)) || L.mapLegacyTopFolderToLibraryId(d.library) || null;
+      }
+      const lib = L.byId(state.libraries, d.libraryId);
+      if (lib) L.syncDocFromLibrary(d, lib);
+    });
+  }
+
   function ensureFolders() {
     const F = AOS.folders;
     if (!F) return;
@@ -78,9 +138,10 @@
       state.folders = copy(F.SEED_FOLDERS);
     }
     (state.docs || []).forEach(d => {
-      if (d.folderId == null || d.folderId === '') {
-        d.folderId = F.defaultFolderId(d);
-      }
+      if (!d) return;
+      const folderMissing = d.folderId == null || d.folderId === '';
+      const libraryMissing = d.libraryId == null || d.libraryId === '';
+      if (folderMissing && libraryMissing) d.folderId = F.defaultFolderId(d);
     });
   }
 
@@ -122,7 +183,9 @@
         delete v.trialUsers;
       });
     });
+    ensureOrg();
     ensureFolders();
+    ensureLibraries();
     ensurePolicyShape();
     ensureCategories();
   }
@@ -138,6 +201,11 @@
   const svc = {
     users,
     currentUser() { return users().find(u => u.id === state.settings.userId) || users()[0]; },
+    userHasPerm(perm) {
+      const roles = (store.state && store.state.roles) || (AOS.data && AOS.data.roles);
+      return !!(AOS.org && AOS.org.userHasPerm(svc.currentUser(), roles, perm));
+    },
+    library(id) { return ((store.state && store.state.libraries) || []).find(l => l.id === id); },
     agent(id) { return state.agents.find(a => a.id === id); },
     categories() { return state.categories || []; },
     toolsCatalog() {
@@ -259,7 +327,7 @@
       const model = svc.modelFor(opts.zone);
       return E.respond({
         agent: config, text, zone: opts.zone, scope: opts.scope, mode: opts.mode || 'chat', user, policy: state.policy,
-        docs: state.docs, web: AOS.data.web, toolsCatalog: svc.toolsCatalog(), phase: svc.phase(),
+        docs: state.docs, libraries: state.libraries, web: AOS.data.web, toolsCatalog: svc.toolsCatalog(), phase: svc.phase(),
         modelName: model ? model.name : null, state: session.flowState ? copy(session.flowState) : null, now: opts.now
       });
     },
@@ -506,7 +574,7 @@
       '<dt>类型</dt><dd>' + esc(E.TYPE_LABEL[doc.type]) + (doc.cad ? ' · ' + esc(doc.cad.format) : '') + '</dd>' +
       '<dt>资料库</dt><dd>' + esc(doc.library) + '</dd><dt>工序 / 课题</dt><dd>' + esc(doc.process) + ' / ' + esc(doc.topic) + '</dd>' +
       '<dt>年份</dt><dd>' + doc.year + '</dd><dt>作者 / 部门</dt><dd>' + esc(doc.author || '—') + ' / ' + esc(doc.dept) + '</dd>' +
-      '<dt>密级</dt><dd>' + lv(doc.level) + '</dd><dt>可见范围</dt><dd>' + (doc.acl && doc.acl.length ? esc(doc.acl.join('、')) : '全部部门') + '</dd>' +
+      '<dt>密级</dt><dd>' + lv(doc.level) + '</dd><dt>可见范围</dt><dd>' + (doc.libraryId ? '继承所属知识库' : (doc.acl && doc.acl.length ? esc(doc.acl.join('、')) : '全部部门')) + '</dd>' +
       (doc.cad ? '<dt>图号</dt><dd>' + esc(doc.cad.drawingNo || '待补录') + '</dd><dt>版本 / 设计</dt><dd>' + esc(doc.cad.version || '—') + ' / ' + esc(doc.cad.designer || '—') + '</dd>' : '') +
       (doc.code ? '<dt>仓库</dt><dd class="mono">' + esc(doc.code.repo) + ' @ ' + esc(doc.code.branch) + '</dd><dt>语言 / 文件</dt><dd>' + esc(doc.code.lang) + ' · ' + doc.code.files + ' 个文件</dd>' : '') +
       (doc.pages ? '<dt>页数</dt><dd>' + doc.pages + '</dd>' : '') +
@@ -516,7 +584,7 @@
   function openDoc(id) {
     const doc = state.docs.find(d => d.id === id);
     if (!doc) return;
-    if (!P.canView(svc.currentUser(), doc)) { toast('你没有权限查看这份资料', 'warn'); return; }
+    if (!P.canView(svc.currentUser(), doc, state.libraries)) { toast('你没有权限查看这份资料', 'warn'); return; }
     drawer({ title: doc.title, body: docDetailHtml(doc) });
   }
 
