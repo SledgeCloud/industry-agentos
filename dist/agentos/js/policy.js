@@ -27,7 +27,9 @@
 
   function canViewLegacy(user, doc) {
     if (levelRank(doc.level) > levelRank(user.clearance)) return false;
-    return !doc.acl || doc.acl.length === 0 || doc.acl.includes(user.dept);
+    if (!doc.acl || doc.acl.length === 0) return true;
+    const depts = (AOS.org && AOS.org.userDepts) ? AOS.org.userDepts(user) : (user.dept ? [user.dept] : []);
+    return doc.acl.some(n => depts.indexOf(n) >= 0);
   }
 
   function librariesFromStore() {

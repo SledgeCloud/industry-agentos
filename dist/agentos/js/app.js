@@ -16,8 +16,7 @@
     { label: '运营', items: [{ id: 'sessions', name: '会话记录', icon: 'history', href: '#/sessions' }] },
     { label: '管理', items: [
       { id: 'policy', name: '出网策略', icon: 'shield-check', href: '#/admin/policy' },
-      { id: 'models', name: '模型网关', icon: 'server', href: '#/admin/models' },
-      { id: 'audit', name: '审计日志', icon: 'scroll-text', href: '#/admin/audit' },
+      { id: 'models', name: '模型管理', icon: 'server', href: '#/admin/models' },
       { id: 'schedules', name: '定时运行', icon: 'calendar-clock', href: '#/admin/schedules' }
     ] }
   ];
@@ -31,8 +30,12 @@
     if (a === 'mcps' || a === 'tools') return { view: 'mcps', nav: 'mcps' };
     if (a === 'skills') return { view: 'skills', nav: 'skills' };
     if (a === 'knowledge') return { view: 'knowledge', nav: 'knowledge' };
+    if (a === 'workspace' || a === 'agentspace') return { view: 'workspace', nav: 'workspace' };
     if (a === 'sessions') return b ? { view: 'sessionDetail', nav: 'sessions', sessionId: b } : { view: 'sessions', nav: 'sessions' };
-    if (a === 'admin') return { view: b || 'policy', nav: b || 'policy' };
+    if (a === 'admin') {
+      if (b === 'audit') return { view: 'org', nav: 'org', orgPage: 'audit' };
+      return { view: b || 'policy', nav: b || 'policy' };
+    }
     if (a === 'org') return { view: 'org', nav: 'org', orgPage: b || 'directory' };
     return { view: 'portal', nav: 'portal' };
   }
@@ -46,7 +49,7 @@
     store.state.settings.userId = id;
     store.save();
     const u = svc.currentUser();
-    ui.toast('已切换为 ' + u.name + '（' + u.dept + '）');
+    ui.toast('已切换为 ' + u.name + '（' + ((AOS.org && AOS.org.userDeptLabel) ? AOS.org.userDeptLabel(u) : u.dept) + '）');
     if (keepMenu) {
       closeAcctSwitch();
       paintAcctMenu();
@@ -66,7 +69,7 @@
 
   const NOTICES = [
     { id: 'n1', title: '定时运行完成', body: '「每周烧结技术动态」已生成会话，已推送给订阅人。', time: '10 分钟前', href: '#/admin/schedules', unread: true, icon: 'calendar-clock' },
-    { id: 'n2', title: '出网请求已拦截', body: '李敏 使用外网模型时，秘密级资料「高炉富氢喷吹工业试验方案」被出口网关拦截。', time: '1 小时前', href: '#/admin/audit', unread: true, icon: 'shield-alert' },
+    { id: 'n2', title: '出网请求已拦截', body: '李敏 使用外网模型时，秘密级资料「高炉富氢喷吹工业试验方案」被出口网关拦截。', time: '1 小时前', href: '#/org/audit', unread: true, icon: 'shield-alert' },
     { id: 'n3', title: '智能体已上线', body: '试验数据分析助手 v1.0 已按三期计划上线，可在智能体广场使用。', time: '昨天', href: '#/', unread: true, icon: 'rocket' },
     { id: 'n4', title: '模型网关限流提醒', body: 'Qwen3-72B-Instruct 近 1 小时调用接近 QPM 上限，请关注高峰时段。', time: '昨天', href: '#/admin/models', unread: false, icon: 'server' },
     { id: 'n5', title: '资料解析完成', body: '「2号高炉低硅冶炼技术攻关总结报告」已完成解析，可被文档检索使用。', time: '2 天前', href: '#/knowledge', unread: false, icon: 'file-check' }
@@ -156,8 +159,7 @@
       '<div class="acct-sec"><div class="acct-row"><span class="acct-ico">' + icon('languages') + '</span><span class="acct-grow">选择语言</span><div class="lang-seg" role="group" aria-label="选择语言"><button type="button" data-lang="zh" class="is-on">中</button><button type="button" data-lang="en">EN</button></div></div></div>' +
       '<div class="acct-sep"></div>' +
       '<div class="acct-sec">' +
-      '<button class="acct-item" type="button" role="menuitem" data-demo="space">' + icon('building-2') + '<span>企业空间</span></button>' +
-      '<button class="acct-item" type="button" role="menuitem" data-demo="org">' + icon('users-round') + '<span>企业组织运营</span></button>' +
+      '<button class="acct-item" type="button" role="menuitem" data-demo="org">' + icon('building-2') + '<span>企业空间</span></button>' +
       '<button class="acct-item" type="button" role="menuitem" data-demo="profile">' + icon('circle-user') + '<span>个人资料</span></button>' +
       '<button class="acct-item" type="button" role="menuitem" data-demo="version">' + icon('download') + '<span class="acct-grow">版本更新</span><span class="acct-dot" aria-label="有更新"></span></button>' +
       '<button class="acct-item' + (switchOpen ? ' is-on' : '') + '" type="button" role="menuitem" data-acct-switch aria-haspopup="menu" aria-expanded="' + (switchOpen ? 'true' : 'false') + '">' + icon('arrow-left-right') + '<span class="acct-grow">切换账号</span>' + icon('chevron-right') + '</button>' +
@@ -177,7 +179,7 @@
       '<div class="acct-sec">' + svc.users().map(u =>
         '<button type="button" class="acct-item acct-user' + (u.id === user.id ? ' is-current' : '') + '" role="menuitem" data-switch="' + u.id + '">' +
         '<span class="avatar' + (u.id === user.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' +
-        '<span class="acct-user-meta"><span class="acct-user-name">' + esc(u.name) + '</span><span class="acct-user-sub">' + esc(u.title + ' · ' + u.dept + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</span></span>' +
+        '<span class="acct-user-meta"><span class="acct-user-name">' + esc(u.name) + '</span><span class="acct-user-sub">' + esc(u.title + ' · ' + ((AOS.org && AOS.org.userDeptLabel) ? AOS.org.userDeptLabel(u) : u.dept) + ' · ' + AOS.policy.levelLabel(u.clearance) + '级') + '</span></span>' +
         (u.id === user.id ? icon('check') : '') +
         '</button>'
       ).join('') + '</div>';

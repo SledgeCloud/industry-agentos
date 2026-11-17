@@ -3,10 +3,10 @@
   const AOS = root.AOS || (root.AOS = {});
 
   const users = [
-    { id: 'u-wang', name: '王建国', title: '高级工程师', dept: '炼铁技术中心', clearance: 'secret', roleIds: ['role-member'] },
-    { id: 'u-li', name: '李敏', title: '科研项目主管', dept: '科技管理部', clearance: 'internal', roleIds: ['role-member'] },
-    { id: 'u-zhang', name: '张涛', title: '情报研究员', dept: '科技情报室', clearance: 'internal', roleIds: ['role-member'] },
-    { id: 'u-chen', name: '陈晓', title: '平台管理员', dept: '信息中心', clearance: 'confidential', roleIds: ['role-admin'] }
+    { id: 'u-wang', name: '王建国', title: '高级工程师', dept: '炼铁技术中心', depts: ['炼铁技术中心', '高炉车间'], clearance: 'secret', roleIds: ['role-member'] },
+    { id: 'u-li', name: '李敏', title: '科研项目主管', dept: '科技管理部', depts: ['科技管理部'], clearance: 'internal', roleIds: ['role-member'] },
+    { id: 'u-zhang', name: '张涛', title: '情报研究员', dept: '科技情报室', depts: ['科技情报室', '科技管理部'], clearance: 'internal', roleIds: ['role-member'] },
+    { id: 'u-chen', name: '陈晓', title: '平台管理员', dept: '信息中心', depts: ['信息中心'], clearance: 'confidential', roleIds: ['role-admin'] }
   ];
 
   const categories = [
@@ -326,8 +326,8 @@
   const models = [
     { id: 'm-qwen', name: 'Qwen3-72B-Instruct', zone: 'internal', status: 'up', qpm: 120, host: 'GPU-01 · vLLM' },
     { id: 'm-ds', name: 'DeepSeek-R1-Distill-70B', zone: 'internal', status: 'up', qpm: 60, host: 'GPU-01 · vLLM' },
-    { id: 'm-ext-a', name: '外部大模型 A（通用）', zone: 'external', status: 'up', qpm: 300, host: '经出口网关' },
-    { id: 'm-ext-b', name: '外部大模型 B（长文本）', zone: 'external', status: 'up', qpm: 120, host: '经出口网关' }
+    { id: 'm-ext-a', name: '外部大模型 A（通用）', zone: 'external', status: 'up', qpm: 300, host: '经出口网关', monthlyTokenLimit: 5000000 },
+    { id: 'm-ext-b', name: '外部大模型 B（长文本）', zone: 'external', status: 'up', qpm: 120, host: '经出口网关', monthlyTokenLimit: 2000000 }
   ];
 
   const policy = {

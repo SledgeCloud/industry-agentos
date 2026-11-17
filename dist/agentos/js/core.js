@@ -79,18 +79,33 @@
     if (!O) return;
     if (!Array.isArray(state.departments) || !state.departments.length) {
       state.departments = copy(O.SEED_DEPARTMENTS);
+    } else if (O.upgradeDepartments) {
+      state.departments = O.upgradeDepartments(state.departments);
+    } else if (O.normalizeDepartments) {
+      state.departments = O.normalizeDepartments(state.departments);
     }
     if (!Array.isArray(state.roles) || !state.roles.length) {
       state.roles = copy(O.SEED_ROLES);
+    } else if (O.normDataScope) {
+      state.roles.forEach(r => {
+        if (r) r.dataScope = O.normDataScope(r.dataScope);
+      });
     }
     (AOS.data.users || []).forEach(u => {
       if (!u) return;
+      if (O.normalizeUser) O.normalizeUser(u);
       if (!Array.isArray(u.roleIds) || !u.roleIds.length) {
         u.roleIds = u.id === 'u-chen' ? ['role-admin'] : ['role-member'];
       }
       const copies = Array.isArray(state.users) ? state.users.filter(x => x && x.id === u.id) : [];
-      copies.forEach(x => { x.roleIds = u.roleIds.slice(); });
+      copies.forEach(x => {
+        x.roleIds = u.roleIds.slice();
+        if (O.normalizeUser) O.normalizeUser(x);
+      });
     });
+    if (Array.isArray(state.userDirectory)) {
+      state.userDirectory.forEach(u => { if (O.normalizeUser) O.normalizeUser(u); });
+    }
   }
 
   function libraryIdForFolder(folder, byId, L) {
@@ -186,8 +201,28 @@
     ensureOrg();
     ensureFolders();
     ensureLibraries();
+    ensureWorkspace();
     ensurePolicyShape();
+    ensureModelsShape();
     ensureCategories();
+  }
+
+  function ensureWorkspace() {
+    if (AOS.workspace && AOS.workspace.ensureShape) AOS.workspace.ensureShape(state);
+  }
+
+  function ensureModelsShape() {
+    if (!Array.isArray(state.models) || !state.models.length) {
+      state.models = copy(AOS.data.models || []);
+      return;
+    }
+    state.models.forEach(m => {
+      if (!m || m.zone !== 'external') return;
+      if (typeof m.monthlyTokenLimit !== 'number' || !(m.monthlyTokenLimit > 0)) {
+        const seed = (AOS.data.models || []).find(x => x.id === m.id);
+        m.monthlyTokenLimit = seed && seed.monthlyTokenLimit > 0 ? seed.monthlyTokenLimit : 2000000;
+      }
+    });
   }
 
   function ensureCategories() {
@@ -314,7 +349,18 @@
     configFor(agent, version) {
       return Object.assign({ id: agent.id, flow: agent.flow, constraint: agent.constraint, batch: agent.batch, core: agent.core }, copy(version ? version.config : agent.draft));
     },
-    modelFor(zone) { return state.models.find(m => m.zone === zone && m.status === 'up') || null; },
+    modelFor(zone) {
+      const ym = now().slice(0, 7);
+      return state.models.find(m => {
+        if (m.zone !== zone || m.status !== 'up') return false;
+        if (m.zone !== 'external' || !(m.monthlyTokenLimit > 0)) return true;
+        let used = 0;
+        (state.sessions || []).forEach(s => (s.messages || []).forEach(msg => {
+          if (msg.role === 'assistant' && msg.turn && msg.turn.model === m.name && String(msg.at).startsWith(ym)) used += 1200;
+        }));
+        return used < m.monthlyTokenLimit;
+      }) || null;
+    },
     newSession(agent, version, user, source, at) {
       const t = at || now();
       return { id: store.uid('S'), agentId: agent.id, agentName: agent.draft ? agent.draft.name : agent.name, version: version ? version.id : '调试', userId: user.id, userName: user.name, dept: user.dept, createdAt: t, updatedAt: t, title: '', messages: [], flowState: null, confirmedEgress: false, source, zone: null, scope: null };
@@ -612,6 +658,84 @@
       '</dl><p class="muted" style="margin-top:12px">' + esc(doc.summary) + '</p>' + extra;
   }
 
+  function docFullContentHtml(doc) {
+    const meta = [
+      doc.library, doc.process, doc.topic, doc.year,
+      doc.author ? ('作者 ' + doc.author) : '',
+      doc.dept, doc.pages ? (doc.pages + ' 页') : ''
+    ].filter(Boolean).map(esc).join(' · ');
+    const head =
+      '<div class="aws-doc-meta">' +
+      '<div class="aws-doc-meta-row">' + typeIcon(doc.type) + '<span>' + esc(E.TYPE_LABEL[doc.type] || doc.type) + '</span>' +
+      lv(doc.level) + '</div>' +
+      (meta ? '<div class="muted small">' + meta + '</div>' : '') +
+      '</div>';
+
+    if (doc.type === 'cad') {
+      return head +
+        '<div class="aws-doc-article">' +
+        '<div class="aws-doc-cad">' + cadThumb(doc, 560, 320) + '</div>' +
+        '<h3>图纸说明</h3>' +
+        '<p>' + esc(doc.summary || '暂无说明') + '</p>' +
+        '<dl class="kv">' +
+        '<dt>图号</dt><dd>' + esc((doc.cad && doc.cad.drawingNo) || '待补录') + '</dd>' +
+        '<dt>格式 / 版本</dt><dd>' + esc((doc.cad && doc.cad.format) || '—') + ' / ' + esc((doc.cad && doc.cad.version) || '—') + '</dd>' +
+        '<dt>设计</dt><dd>' + esc((doc.cad && doc.cad.designer) || doc.author || '—') + '</dd>' +
+        '<dt>日期</dt><dd>' + esc((doc.cad && doc.cad.date) || doc.year || '—') + '</dd>' +
+        '</dl></div>';
+    }
+
+    if (doc.type === 'db' && doc.db) {
+      return head + '<div class="aws-doc-article"><h3>库说明</h3><p>' + esc(doc.summary || '') + '</p>' +
+        doc.db.tables.map(t =>
+          '<h3>数据表 · ' + esc(t.name) + '</h3><p class="muted small">' + esc(t.desc || '') + '</p>' +
+          '<div class="table-wrap panel"><table class="tbl dict"><thead><tr><th>字段</th><th>含义</th><th>单位</th><th>示例值</th></tr></thead><tbody>' +
+          t.fields.map(f => '<tr><td class="mono">' + esc(f.name) + '</td><td>' + esc(f.meaning) + '</td><td>' + esc(f.unit || '—') + '</td><td>' + esc(f.sample) + '</td></tr>').join('') +
+          '</tbody></table></div>'
+        ).join('') + '</div>';
+    }
+
+    if (doc.type === 'code') {
+      const codeBlocks = (doc.snippets || []).map(s =>
+        '<h3>' + esc(s.loc) + '</h3><pre class="aws-doc-pre"><code>' + esc(s.text) + '</code></pre>'
+      ).join('');
+      return head + '<div class="aws-doc-article"><h3>仓库概述</h3><p>' + esc(doc.summary || '') + '</p>' +
+        (doc.code
+          ? '<p class="muted small mono">' + esc(doc.code.repo) + ' @ ' + esc(doc.code.branch) + ' · ' + esc(doc.code.lang) + ' · ' + doc.code.files + ' 个文件</p>'
+          : '') +
+        (codeBlocks || '<p class="muted">暂无代码摘录。</p>') + '</div>';
+    }
+
+    const kws = (doc.keywords || []).slice(0, 8);
+    const snips = doc.snippets || [];
+    let body = '';
+    body += '<h3>摘要</h3><p>' + esc(doc.summary || '（无摘要）') + '</p>';
+    if (kws.length) {
+      body += '<h3>关键词</h3><p>' + kws.map(k => '<span class="badge outline">' + esc(k) + '</span> ').join('') + '</p>';
+    }
+    body += '<h3>一、背景与目标</h3>' +
+      '<p>本文围绕「' + esc(doc.topic || doc.title) + '」展开，所属工序为' + esc(doc.process || '综合') +
+      '，收录于' + esc(doc.library || '知识库') + '。结合厂内生产与技术实践，梳理相关问题、措施与成效，供后续研究与现场参考。</p>' +
+      '<p>' + esc(doc.summary || '') + ' 下文按章节给出主要分析过程与结论要点。</p>';
+    body += '<h3>二、主要内容</h3>';
+    if (snips.length) {
+      body += snips.map((s, i) =>
+        '<h4>' + (i + 1) + '. ' + esc(s.loc || ('段落 ' + (i + 1))) + '</h4>' +
+        '<p>' + esc(s.text) + '</p>' +
+        '<p>在上述基础上，结合' + esc(doc.process || '现场') + '运行数据与工艺约束，进一步核对指标波动区间，并形成可执行的调整建议。</p>'
+      ).join('');
+    } else {
+      body += '<p>本稿暂未抽取分段正文。以下为基于摘要整理的阅读稿：</p><p>' + esc(doc.summary || '') + '</p>';
+    }
+    body += '<h3>三、结论与建议</h3>' +
+      '<p>综合以上内容，建议在后续生产与课题推进中持续跟踪「' + esc((kws[0] || doc.topic || '关键指标')) +
+      '」相关指标，并做好过程记录与复盘。本文档为演示环境全文预览稿，不代表正式归档版式。</p>';
+    if (doc.pages) {
+      body += '<p class="muted small">原文约 ' + doc.pages + ' 页 · ' + esc(doc.year || '') + ' · ' + esc(doc.author || doc.dept || '') + '</p>';
+    }
+    return head + '<div class="aws-doc-article">' + body + '</div>';
+  }
+
   function openDoc(id) {
     const doc = state.docs.find(d => d.id === id);
     if (!doc) return;
@@ -638,5 +762,5 @@
 
   AOS.store = store;
   AOS.svc = svc;
-  AOS.ui = { esc, icon, isImageIcon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, pinCardMore, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, exportTurn };
+  AOS.ui = { esc, icon, isImageIcon, lv, status, STATUS, zoneBadge, typeIcon, TYPE_ICON, initials, icons, pinCardMore, toast, modal, drawer, confirm: confirmBox, download, cadThumb, chart, inline, turnHtml, messagesHtml, openDoc, openCitation, docDetailHtml, docFullContentHtml, exportTurn };
 })(typeof window !== 'undefined' ? window : globalThis);

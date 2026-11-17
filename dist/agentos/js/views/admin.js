@@ -18,29 +18,54 @@
     AOS.setCrumbs([{ name: '管理' }, { name: '出网策略' }]);
     const pol = store.state.policy;
     const admin = isAdmin();
+    let tab = 'matrix';
     function draw() {
       const publicOk = P.publicEgressAllowed(pol);
       const internalOk = P.internalEgressAllowed(pol);
       const egressSwitch = (id, ok, label) => '<label class="egress-ctl"><span class="switch"><input type="checkbox" id="' + id + '"' + (ok ? ' checked' : '') + (admin ? '' : ' disabled') + ' aria-label="' + label + '"><span></span></span><span class="small">' + (ok ? '允许' : '禁止') + '</span></label>';
-      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>出网策略</h1><p>外网模型与厂内资料组合使用时，按资料密级决定能否发送。所有出网请求经出口网关审计。</p></div></div>' + adminNote() +
-        '<div class="grid-2" style="align-items:start;margin-bottom:14px"><div class="panel"><div class="panel-head"><h3>密级与模型</h3></div><div class="table-wrap"><table class="tbl matrix"><thead><tr><th>资料密级</th><th>发给内网模型</th><th>发给外网模型</th></tr></thead><tbody>' +
+      const words = pol.sensitiveWords || [];
+      const matrixPane =
+        '<div class="panel"><div class="panel-head"><h3>密级与模型</h3></div><div class="table-wrap"><table class="tbl matrix"><thead><tr><th>资料密级</th><th>发给内网模型</th><th>发给外网模型</th></tr></thead><tbody>' +
         '<tr><td>' + ui.lv('public') + '</td><td><span class="badge ok">允许</span></td><td>' + egressSwitch('publicEgress', publicOk, '允许公开资料发往外网模型') + '</td></tr>' +
         '<tr><td>' + ui.lv('internal') + '</td><td><span class="badge ok">允许</span></td><td>' + egressSwitch('internalEgress', internalOk, '允许内部资料发往外网模型') + '</td></tr>' +
         '<tr><td>' + ui.lv('secret') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr>' +
-        '<tr><td>' + ui.lv('confidential') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr></tbody></table></div><div class="panel-body" style="padding-top:0"><span class="muted small">公开、内部密级可分别开关；秘密及以上任何配置都不能发往外网模型。</span></div></div>' +
-        '<div class="panel"><div class="panel-head"><h3>敏感词</h3><span class="muted small">外网模型请求或联网检索命中即拦截</span></div><div class="panel-body"><div class="tag-edit">' + pol.sensitiveWords.map((w, i) => '<span class="tag">' + esc(w) + (admin ? '<button data-delword="' + i + '" aria-label="删除 ' + esc(w) + '">' + icon('x') + '</button>' : '') + '</span>').join('') + '</div>' +
-        (admin ? '<div class="row" style="margin-top:12px"><input class="input" id="newWord" placeholder="添加敏感词，回车确认" style="max-width:260px"><button class="btn sm" id="addWord">添加</button></div>' : '') + '</div></div></div></div>';
+        '<tr><td>' + ui.lv('confidential') + '</td><td><span class="badge ok">允许</span></td><td><span class="badge danger">' + icon('lock') + '禁止</span></td></tr></tbody></table></div><div class="panel-body" style="padding-top:0"><span class="muted small">公开、内部密级可分别开关；秘密及以上任何配置都不能发往外网模型。</span></div></div>';
+      const wordsPane =
+        '<div class="panel"><div class="panel-head"><h3>敏感词</h3><span class="muted small">外网模型请求或联网检索命中即拦截 · 共 ' + words.length + ' 个</span></div><div class="panel-body">' +
+        (words.length
+          ? '<ul class="word-list" role="list">' + words.map((w, i) =>
+            '<li class="word-list-item"><span class="word-list-text">' + esc(w) + '</span>' +
+            (admin ? '<button type="button" class="btn icon sm ghost" data-delword="' + i + '" aria-label="删除 ' + esc(w) + '" title="删除">' + icon('trash-2') + '</button>' : '') +
+            '</li>').join('') + '</ul>'
+          : '<div class="empty sm">' + icon('shield-off') + '暂无敏感词</div>') +
+        (admin ? '<div class="row word-list-add"><input class="input" id="newWord" placeholder="添加敏感词，回车确认"><button class="btn sm" id="addWord" type="button">添加</button></div>' : '') +
+        '</div></div>';
+      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>出网策略</h1><p>外网模型与厂内资料组合使用时，按资料密级决定能否发送。所有出网请求经出口网关审计。</p></div></div>' + adminNote() +
+        '<div class="pill-tabs" role="tablist" aria-label="出网策略">' +
+        '<button type="button" role="tab" data-policy-tab="matrix" aria-selected="' + (tab === 'matrix' ? 'true' : 'false') + '" class="' + (tab === 'matrix' ? 'on' : '') + '">密级与模型</button>' +
+        '<button type="button" role="tab" data-policy-tab="words" aria-selected="' + (tab === 'words' ? 'true' : 'false') + '" class="' + (tab === 'words' ? 'on' : '') + '">敏感词</button>' +
+        '</div>' +
+        '<div class="policy-pane">' + (tab === 'words' ? wordsPane : matrixPane) + '</div></div>';
       bindBeAdmin(el);
-      const bindEgress = (id, key, label) => {
-        const sw = el.querySelector('#' + id);
-        if (!sw) return;
-        sw.addEventListener('change', () => { pol[key] = sw.checked; store.save(); ui.toast(label + '：' + (sw.checked ? '允许' : '禁止')); draw(); });
-      };
-      bindEgress('publicEgress', 'publicToExternal', '公开资料发往外网模型');
-      bindEgress('internalEgress', 'internalToExternal', '内部资料发往外网模型');
-      el.querySelectorAll('[data-delword]').forEach(b => b.addEventListener('click', () => { pol.sensitiveWords.splice(Number(b.dataset.delword), 1); store.save(); draw(); }));
-      const add = () => { const i = el.querySelector('#newWord'); const w = i.value.trim(); if (!w) return; if (!pol.sensitiveWords.includes(w)) pol.sensitiveWords.push(w); store.save(); draw(); el.querySelector('#newWord').focus(); };
-      const ab = el.querySelector('#addWord'); if (ab) { ab.addEventListener('click', add); el.querySelector('#newWord').addEventListener('keydown', e => { if (e.key === 'Enter') add(); }); }
+      el.querySelectorAll('[data-policy-tab]').forEach(b => b.addEventListener('click', () => {
+        const next = b.dataset.policyTab;
+        if (next === tab) return;
+        tab = next;
+        draw();
+      }));
+      if (tab === 'matrix') {
+        const bindEgress = (id, key, label) => {
+          const sw = el.querySelector('#' + id);
+          if (!sw) return;
+          sw.addEventListener('change', () => { pol[key] = sw.checked; store.save(); ui.toast(label + '：' + (sw.checked ? '允许' : '禁止')); draw(); });
+        };
+        bindEgress('publicEgress', 'publicToExternal', '公开资料发往外网模型');
+        bindEgress('internalEgress', 'internalToExternal', '内部资料发往外网模型');
+      } else {
+        el.querySelectorAll('[data-delword]').forEach(b => b.addEventListener('click', () => { pol.sensitiveWords.splice(Number(b.dataset.delword), 1); store.save(); draw(); }));
+        const add = () => { const i = el.querySelector('#newWord'); const w = i.value.trim(); if (!w) return; if (!pol.sensitiveWords.includes(w)) pol.sensitiveWords.push(w); store.save(); draw(); el.querySelector('#newWord').focus(); };
+        const ab = el.querySelector('#addWord'); if (ab) { ab.addEventListener('click', add); el.querySelector('#newWord').addEventListener('keydown', e => { if (e.key === 'Enter') add(); }); }
+      }
       ui.icons();
     }
     draw();
@@ -48,44 +73,173 @@
 
   /* ---------- 模型网关 ---------- */
   AOS.views.models = function (el) {
-    AOS.setCrumbs([{ name: '管理' }, { name: '模型网关' }]);
+    AOS.setCrumbs([{ name: '管理' }, { name: '模型管理' }]);
     const admin = isAdmin();
+    function fmtNum(n) { return Number(n || 0).toLocaleString('zh-CN'); }
     function calls(name) {
       const today = svc.now().slice(0, 10);
       let all = 0, t = 0;
-      store.state.sessions.forEach(s => s.messages.forEach(m => { if (m.role === 'assistant' && m.turn.model === name) { all++; if (m.at.startsWith(today)) t++; } }));
+      store.state.sessions.forEach(s => s.messages.forEach(m => { if (m.role === 'assistant' && m.turn && m.turn.model === name) { all++; if (String(m.at).startsWith(today)) t++; } }));
       return [t, all];
     }
+    function monthTokens(name) {
+      const ym = svc.now().slice(0, 7);
+      let n = 0;
+      store.state.sessions.forEach(s => s.messages.forEach(m => {
+        if (m.role === 'assistant' && m.turn && m.turn.model === name && String(m.at).startsWith(ym)) n += 1200;
+      }));
+      return n;
+    }
+    function tokenCell(m) {
+      const used = monthTokens(m.name);
+      const limit = m.zone === 'external' ? Math.max(0, Number(m.monthlyTokenLimit) || 0) : 0;
+      const over = limit > 0 && used >= limit;
+      const limitText = m.zone === 'external' ? (limit ? fmtNum(limit) : '未设置') : '不限额';
+      return '<div class="token-limit-cell">' +
+        '<div>' + limitText + '</div>' +
+        '<div class="small ' + (over ? 'danger-text' : 'muted') + '">本月已用 ' + fmtNum(used) + '</div>' +
+        '</div>';
+    }
+    const PROTOCOLS = [
+      { id: 'openai', label: 'OpenAI Compatible', placeholder: 'https://api.openai.com/v1' },
+      { id: 'azure', label: 'Azure OpenAI', placeholder: 'https://{resource}.openai.azure.com' },
+      { id: 'anthropic', label: 'Anthropic', placeholder: 'https://api.anthropic.com' },
+      { id: 'dashscope', label: '阿里云 DashScope', placeholder: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+      { id: 'custom', label: '自定义 HTTP', placeholder: 'https://example.com/v1' }
+    ];
+    function protocolLabel(id) {
+      const p = PROTOCOLS.find(x => x.id === id);
+      return p ? p.label : (id || '外网');
+    }
+    function hostSummary(m) {
+      if (m.endpoint) return protocolLabel(m.protocol) + ' · ' + m.endpoint;
+      return m.host || '—';
+    }
+    function externalFormHtml(model) {
+      const cur = model || {};
+      const proto = cur.protocol || 'openai';
+      const ph = (PROTOCOLS.find(p => p.id === proto) || PROTOCOLS[0]).placeholder;
+      return '<div class="stack">' +
+        '<div class="field"><label for="mName">显示名称</label><input class="input" id="mName" value="' + esc(cur.name || '') + '" placeholder="例如 外部通用模型" autofocus><span class="err" id="mErr" hidden></span></div>' +
+        '<div class="field"><label for="mProto">接入协议</label><select class="select" id="mProto">' +
+        PROTOCOLS.map(p => '<option value="' + p.id + '"' + (p.id === proto ? ' selected' : '') + '>' + esc(p.label) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label for="mEndpoint">服务地址</label><input class="input" id="mEndpoint" value="' + esc(cur.endpoint || '') + '" placeholder="' + esc(ph) + '"></div>' +
+        '<div class="field"><label for="mKey">API 密钥</label><input class="input" id="mKey" type="password" value="' + esc(cur.apiKey || '') + '" placeholder="sk-…" autocomplete="off"></div>' +
+        '<div class="field"><label for="mModelId">模型 ID</label><input class="input" id="mModelId" value="' + esc(cur.modelId || '') + '" placeholder="例如 gpt-4o / qwen-plus"></div>' +
+        '<div class="grid-2"><div class="field"><label for="mQpm">限流（次/分钟）</label><input class="input" id="mQpm" type="number" min="1" value="' + (cur.qpm || 60) + '"></div>' +
+        '<div class="field"><label for="mToken">月度 Token 限额</label><input class="input" id="mToken" type="number" min="1" step="1000" value="' + (cur.monthlyTokenLimit || 2000000) + '"></div></div>' +
+        '</div>';
+    }
+    function bindExternalForm(modalEl, existing, close) {
+      const proto = modalEl.querySelector('#mProto');
+      const endpoint = modalEl.querySelector('#mEndpoint');
+      const syncProto = () => {
+        const p = PROTOCOLS.find(x => x.id === proto.value) || PROTOCOLS[0];
+        endpoint.placeholder = p.placeholder;
+      };
+      proto.addEventListener('change', syncProto);
+      syncProto();
+      modalEl.querySelector('[data-ok]').addEventListener('click', () => {
+        const name = modalEl.querySelector('#mName').value.trim();
+        const endpointVal = endpoint.value.trim();
+        const apiKey = modalEl.querySelector('#mKey').value.trim();
+        const modelId = modalEl.querySelector('#mModelId').value.trim();
+        const err = modalEl.querySelector('#mErr');
+        const showErr = msg => { err.hidden = false; err.textContent = msg; };
+        if (!name) return showErr('请填写显示名称');
+        if (store.state.models.some(x => x.name === name && (!existing || x.id !== existing.id))) return showErr('已存在同名模型');
+        if (!endpointVal) return showErr('请填写服务地址');
+        if (!apiKey) return showErr('请填写 API 密钥');
+        if (!modelId) return showErr('请填写模型 ID');
+        const protocol = proto.value;
+        const qpm = Math.max(1, Number(modalEl.querySelector('#mQpm').value) || 60);
+        const monthlyTokenLimit = Math.max(1, Number(modalEl.querySelector('#mToken').value) || 2000000);
+        const host = protocolLabel(protocol) + ' · ' + endpointVal;
+        if (existing) {
+          Object.assign(existing, { name, protocol, endpoint: endpointVal, apiKey, modelId, qpm, monthlyTokenLimit, host, zone: 'external' });
+          store.save();
+          close();
+          draw();
+          ui.toast('已保存“' + name + '”');
+          return;
+        }
+        store.state.models.push({
+          id: store.uid('m'), name, zone: 'external', status: 'up',
+          protocol, endpoint: endpointVal, apiKey, modelId, qpm, monthlyTokenLimit, host
+        });
+        store.save();
+        close();
+        draw();
+        ui.toast('已添加外网模型“' + name + '”');
+      });
+    }
+    function openCreate() {
+      ui.modal({
+        title: '新增外网模型', okText: '添加', size: 'lg',
+        body: externalFormHtml(null),
+        onMount(m, close) { bindExternalForm(m, null, close); }
+      });
+    }
+    function openEdit(model) {
+      if (model.zone === 'external') {
+        ui.modal({
+          title: '编辑外网模型', okText: '保存', size: 'lg',
+          body: externalFormHtml(model),
+          onMount(m, close) { bindExternalForm(m, model, close); }
+        });
+        return;
+      }
+      ui.modal({
+        title: '编辑内网模型', okText: '保存',
+        body: '<div class="stack">' +
+          '<div class="field"><label for="mName">显示名称</label><input class="input" id="mName" value="' + esc(model.name) + '" disabled></div>' +
+          '<div class="field"><label for="mHost">部署</label><input class="input" id="mHost" value="' + esc(model.host || '') + '"' + (admin ? '' : ' disabled') + '></div>' +
+          '<div class="field"><label for="mQpm">限流（次/分钟）</label><input class="input" id="mQpm" type="number" min="1" value="' + (model.qpm || 60) + '"' + (admin ? '' : ' disabled') + '></div>' +
+          '</div>',
+        onMount(m, close) {
+          if (!admin) return;
+          m.querySelector('[data-ok]').addEventListener('click', () => {
+            model.host = m.querySelector('#mHost').value.trim() || model.host;
+            model.qpm = Math.max(1, Number(m.querySelector('#mQpm').value) || 60);
+            store.save();
+            close();
+            draw();
+            ui.toast('已保存“' + model.name + '”');
+          });
+        }
+      });
+    }
     function draw() {
-      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>模型网关</h1><p>所有模型调用的唯一入口。对话中选择“内网模型 / 外网模型”后，由网关路由到该区域第一个正常运行的模型。</p></div></div>' + adminNote() +
-        '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>模型</th><th>区域</th><th>部署</th><th>状态</th><th>限流（次/分钟）</th><th>今日调用</th><th>累计调用</th></tr></thead><tbody>' +
-        store.state.models.map(m => { const [t, all] = calls(m.name); return '<tr><td style="font-weight:500;color:var(--ink)">' + esc(m.name) + '</td><td>' + ui.zoneBadge(m.zone) + '</td><td class="muted">' + esc(m.host) + '</td><td><label class="row"><span class="switch"><input type="checkbox" data-model="' + m.id + '"' + (m.status === 'up' ? ' checked' : '') + (admin ? '' : ' disabled') + ' aria-label="启用 ' + esc(m.name) + '"><span></span></span><span class="small">' + (m.status === 'up' ? '正常' : '已停用') + '</span></label></td><td><input class="input" type="number" min="1" style="width:100px;height:28px" data-qpm="' + m.id + '" value="' + m.qpm + '"' + (admin ? '' : ' disabled') + ' aria-label="限流"></td><td>' + t + '</td><td>' + all + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-        '<div class="note" style="margin-top:12px">' + icon('info') + '<span>停用某区域的全部模型后，用户选择该区域时会收到“暂不可用，可以切换到内网模型”的提示。外网模型请求先经过密级检查和敏感词拦截。</span></div></div>';
+      el.innerHTML = '<div class="page"><div class="page-head"><div><h1>模型管理</h1><p>所有模型调用的唯一入口。对话中选择“内网模型 / 外网模型”后，由网关路由到该区域第一个正常运行的模型。</p></div>' +
+        (admin ? '<button class="btn primary" id="addModel" type="button">' + icon('plus') + '新增模型</button>' : '') +
+        '</div>' + adminNote() +
+        '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>模型</th><th>区域</th><th>部署</th><th>状态</th><th>限流</th><th>月度 Token 限额</th><th>今日调用</th><th>累计调用</th><th></th></tr></thead><tbody>' +
+        store.state.models.map(m => {
+          const [t, all] = calls(m.name);
+          const deploy = hostSummary(m);
+          const deployHint = m.modelId ? ('模型 ID：' + m.modelId) : deploy;
+          return '<tr><td style="font-weight:500;color:var(--ink)">' + esc(m.name) + (m.modelId ? '<div class="small muted mono">' + esc(m.modelId) + '</div>' : '') + '</td><td>' + ui.zoneBadge(m.zone) + '</td><td class="muted clip" title="' + esc(deployHint) + '">' + esc(deploy) + '</td><td><label class="row"><span class="switch"><input type="checkbox" data-model="' + m.id + '"' + (m.status === 'up' ? ' checked' : '') + (admin ? '' : ' disabled') + ' aria-label="启用 ' + esc(m.name) + '"><span></span></span><span class="small">' + (m.status === 'up' ? '正常' : '已停用') + '</span></label></td><td class="nowrap">' + fmtNum(m.qpm || 0) + '<span class="muted small"> 次/分</span></td><td class="nowrap">' + tokenCell(m) + '</td><td>' + t + '</td><td>' + all + '</td><td class="nowrap">' +
+            (admin ? '<button type="button" class="btn sm" data-edit="' + esc(m.id) + '">编辑</button>' : '') +
+            '</td></tr>';
+        }).join('') + '</tbody></table></div>' +
+        '<div class="note" style="margin-top:12px">' + icon('info') + '<span>停用某区域的全部模型后，用户选择该区域时会收到“暂不可用，可以切换到内网模型”的提示。外网模型请求先经过密级检查和敏感词拦截；月度 Token 限额仅对外网模型生效。</span></div></div>';
       bindBeAdmin(el);
+      const addBtn = el.querySelector('#addModel');
+      if (addBtn) addBtn.addEventListener('click', openCreate);
       el.querySelectorAll('[data-model]').forEach(i => i.addEventListener('change', () => { const m = store.state.models.find(x => x.id === i.dataset.model); m.status = i.checked ? 'up' : 'down'; store.save(); ui.toast(m.name + (i.checked ? ' 已启用' : ' 已停用')); draw(); }));
-      el.querySelectorAll('[data-qpm]').forEach(i => i.addEventListener('change', () => { const m = store.state.models.find(x => x.id === i.dataset.qpm); m.qpm = Math.max(1, Number(i.value) || 1); store.save(); ui.toast('已更新限流'); }));
+      el.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+        const model = store.state.models.find(x => x.id === b.dataset.edit);
+        if (model) openEdit(model);
+      }));
       ui.icons();
     }
     draw();
   };
 
-  /* ---------- 审计日志 ---------- */
-  AOS.views.audit = function (el) {
-    AOS.setCrumbs([{ name: '管理' }, { name: '审计日志' }]);
-    const f = { result: '', kind: '' };
-    function draw() {
-      const list = store.state.audit.filter(a => (!f.result || a.result === f.result) && (!f.kind || a.kind === f.kind));
-      el.querySelector('#aBody').innerHTML = list.length ? list.map(a => '<tr' + (a.sessionId ? ' class="clickable" data-sid="' + a.sessionId + '"' : '') + '><td class="nowrap muted">' + esc(a.time) + '</td><td class="nowrap">' + esc(a.userName) + '<div class="small muted">' + esc(a.dept) + '</div></td><td class="nowrap">' + esc(a.agentName) + '</td><td class="nowrap">' + esc(a.kind) + '</td><td class="nowrap">' + esc(a.target) + '</td><td class="clip" title="' + esc(a.content) + '">' + esc(a.content) + '</td><td class="small">' + (a.docs && a.docs.length ? esc(a.docs.join('；')) : '<span class="muted">无</span>') + '</td><td><span class="badge ' + (a.result === '拦截' ? 'danger' : 'ok') + '">' + esc(a.result) + '</span></td><td class="small muted">' + esc(a.reason) + '</td></tr>').join('') : '<tr><td colspan="9"><div class="empty">' + icon('scroll-text') + '没有符合条件的出网记录。</div></td></tr>';
-      el.querySelector('#aCount').textContent = '共 ' + list.length + ' 条';
-      ui.icons();
-    }
-    el.innerHTML = '<div class="page"><div class="page-head"><div><h1>审计日志</h1><p>出口网关记录每一次外网模型调用、联网搜索，以及实际发出的资料清单。</p></div></div>' +
-      '<div class="toolbar"><select class="select" id="aRes" aria-label="结果"><option value="">全部结果</option><option>放行</option><option>拦截</option></select><select class="select" id="aKind" aria-label="类型"><option value="">全部类型</option><option>模型调用</option><option>联网搜索</option></select><span class="muted small" id="aCount"></span></div>' +
-      '<div class="panel table-wrap"><table class="tbl"><thead><tr><th>时间</th><th>用户</th><th>智能体</th><th>类型</th><th>目标</th><th>内容摘要</th><th>发出资料</th><th>结果</th><th>说明</th></tr></thead><tbody id="aBody"></tbody></table></div></div>';
-    el.querySelector('#aRes').addEventListener('change', e => { f.result = e.target.value; draw(); });
-    el.querySelector('#aKind').addEventListener('change', e => { f.kind = e.target.value; draw(); });
-    el.querySelector('#aBody').addEventListener('click', e => { const tr = e.target.closest('tr[data-sid]'); if (tr) location.hash = '#/sessions/' + tr.dataset.sid; });
-    draw();
+  /* ---------- 审计日志（已迁入企业空间 #/org/audit） ---------- */
+  AOS.views.audit = function () {
+    location.hash = '#/org/audit';
   };
 
   /* ---------- 定时运行 ---------- */
@@ -146,7 +300,7 @@
       const me = svc.currentUser();
       el.innerHTML = '<div class="page"><div class="page-head"><div><h1>演示设置</h1><p>切换演示用户。不同部门和密级看到的资料范围不同；内部资料出网由全局策略统一控制。</p></div></div>' +
         '<div class="panel" style="margin-bottom:14px"><div class="panel-head"><h3>演示用户</h3><span class="muted small">出网：公开 ' + (P.publicEgressAllowed(store.state.policy) ? '允许' : '禁止') + ' · 内部 ' + (P.internalEgressAllowed(store.state.policy) ? '允许' : '禁止') + '（在出网策略中配置）</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>用户</th><th>职务</th><th>部门</th><th>密级</th><th></th></tr></thead><tbody>' +
-        svc.users().map(u => '<tr><td><div class="row"><span class="avatar' + (u.id === me.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' + esc(u.name) + '</div></td><td>' + esc(u.title) + '</td><td>' + esc(u.dept) + '</td><td>' + ui.lv(u.clearance) + '</td><td>' + (u.id === me.id ? '<span class="muted small">当前用户</span>' : '<button class="btn sm" data-user="' + u.id + '">切换</button>') + '</td></tr>').join('') + '</tbody></table></div></div>' +
+        svc.users().map(u => '<tr><td><div class="row"><span class="avatar' + (u.id === me.id ? '' : ' light') + '">' + esc(u.name.slice(0, 1)) + '</span>' + esc(u.name) + '</div></td><td>' + esc(u.title) + '</td><td>' + esc((AOS.org && AOS.org.userDeptLabel) ? AOS.org.userDeptLabel(u) : u.dept) + '</td><td>' + ui.lv(u.clearance) + '</td><td>' + (u.id === me.id ? '<span class="muted small">当前用户</span>' : '<button class="btn sm" data-user="' + u.id + '">切换</button>') + '</td></tr>').join('') + '</tbody></table></div></div>' +
         '<div class="panel"><div class="panel-head"><h3>演示数据</h3></div><div class="panel-body row"><span class="grow muted">配置、资料、会话和审计记录保存在当前浏览器中。重置后恢复初始示例。</span><button class="btn danger" id="resetBtn">' + icon('rotate-ccw') + '重置演示数据</button></div></div></div>';
       el.querySelectorAll('[data-user]').forEach(b => b.addEventListener('click', () => { AOS.switchUser(b.dataset.user); }));
       el.querySelector('#resetBtn').addEventListener('click', async () => {

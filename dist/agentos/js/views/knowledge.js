@@ -62,13 +62,17 @@
       const users = svc.users().slice();
       if (selected && !users.some(u => u.id === selected)) users.unshift({ id: selected, name: selected, dept: '' });
       if (!users.length) return '<option value="">暂无用户</option>';
-      return users.map(u => '<option value="' + esc(u.id) + '"' + (u.id === selected ? ' selected' : '') + '>' + esc(u.name + (u.dept ? ' · ' + u.dept : '')) + '</option>').join('');
+      return users.map(u => {
+        const dlabel = (AOS.org && AOS.org.userDeptLabel) ? AOS.org.userDeptLabel(u) : (u.dept || '');
+        return '<option value="' + esc(u.id) + '"' + (u.id === selected ? ' selected' : '') + '>' + esc(u.name + (dlabel ? ' · ' + dlabel : '')) + '</option>';
+      }).join('');
     }
-    const names = ((store.state && store.state.departments) || []).map(d => d && d.name).filter(Boolean);
-    if (!names.length && AOS.data && AOS.data.orgs) AOS.data.orgs.forEach(n => { if (names.indexOf(n) < 0) names.push(n); });
-    if (selected && names.indexOf(selected) < 0) names.unshift(selected);
-    if (!names.length) return '<option value="">暂无部门</option>';
-    return names.map(n => '<option value="' + esc(n) + '"' + (n === selected ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+    const depts = (store.state && store.state.departments) || [];
+    let flat = (AOS.org && AOS.org.flatOptions) ? AOS.org.flatOptions(depts) : depts.filter(Boolean).map(d => ({ name: d.name, label: d.name }));
+    if (!flat.length && AOS.data && AOS.data.orgs) flat = AOS.data.orgs.map(n => ({ name: n, label: n }));
+    if (selected && !flat.some(d => d.name === selected)) flat = [{ name: selected, label: selected }].concat(flat);
+    if (!flat.length) return '<option value="">暂无部门</option>';
+    return flat.map(d => '<option value="' + esc(d.name) + '"' + (d.name === selected ? ' selected' : '') + '>' + esc(d.label || d.name) + '</option>').join('');
   }
 
   function grantRowHtml(g) {

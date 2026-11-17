@@ -36,13 +36,28 @@
       session: opts.session || null,
       zone: (opts.session && opts.session.zone) || (cfg.allowedModels.includes(cfg.defaultModel) ? cfg.defaultModel : cfg.allowedModels[0]),
       scope: (opts.session && opts.session.scope) || cfg.defaultScope || 'internal',
-      mode: 'chat', busy: false, confirmed: opts.session ? opts.session.confirmedEgress : false, pending: null, timers: []
+      mode: 'chat', busy: false, confirmed: opts.session ? opts.session.confirmedEgress : false, pending: null, timers: [],
+      refs: []
     };
     if (!cfg.allowedModels.includes(st.zone)) st.zone = cfg.allowedModels[0];
 
+    const REF_KIND = {
+      folder: '文件夹', material: '素材', deliverable: '交付物',
+      library: '知识库', kbFolder: '知识文件夹', doc: '知识资料'
+    };
+    function refIcon(kind) {
+      if (kind === 'folder' || kind === 'kbFolder') return 'folder';
+      if (kind === 'library') return 'library';
+      if (kind === 'deliverable') return 'file-check';
+      if (kind === 'doc') return 'file-text';
+      return 'file';
+    }
+
     host.innerHTML = '<div class="chat-main">' + (opts.head || '') +
       '<div class="chat-scroll" id="chatScroll"><div class="chat-inner" id="msgs"></div></div>' +
-      '<div class="composer-wrap"><div class="composer"><label class="sr-only" for="chatInput">输入问题</label><textarea id="chatInput" rows="2" placeholder="输入问题，Enter 发送，Shift + Enter 换行"></textarea>' +
+      '<div class="composer-wrap"><div class="composer">' +
+      '<div class="composer-refs" id="composerRefs" hidden></div>' +
+      '<label class="sr-only" for="chatInput">输入问题</label><textarea id="chatInput" rows="2" placeholder="输入问题，Enter 发送，Shift + Enter 换行；可从右侧工作台引用资料"></textarea>' +
       '<div class="composer-bar"><div class="seg" role="group" aria-label="模型" id="zoneSeg"></div><div class="seg" role="group" aria-label="资料范围" id="scopeSeg"></div>' +
       (cfg.flow === 'research' ? '<div class="seg" role="group" aria-label="模式" id="modeSeg"><button data-mode="chat">' + icon('message-square') + '对话</button><button data-mode="files">' + icon('folder-open') + '资料检索</button></div>' : '') +
       (locked ? '<span class="lock">' + icon('lock') + '锁定内网模型</span>' : '') +
@@ -50,6 +65,49 @@
 
     const $ = s => host.querySelector(s);
     const input = $('#chatInput');
+
+    function drawRefs() {
+      const box = $('#composerRefs');
+      if (!box) return;
+      if (!st.refs.length) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+      }
+      box.hidden = false;
+      box.innerHTML = st.refs.map((r, i) =>
+        '<span class="composer-ref" title="' + esc((REF_KIND[r.kind] || '') + ' · ' + r.name) + '">' +
+        icon(refIcon(r.kind)) +
+        '<span class="composer-ref-kind">' + esc(REF_KIND[r.kind] || '引用') + '</span>' +
+        '<span class="composer-ref-name">' + esc(r.name) + '</span>' +
+        '<button type="button" class="composer-ref-x" data-ref-rm="' + i + '" aria-label="移除引用">' + icon('x') + '</button></span>'
+      ).join('');
+      ui.icons();
+    }
+
+    function cite(ref) {
+      if (!ref || !ref.id || !ref.name) return false;
+      const kind = ref.kind || 'material';
+      if (st.refs.some(r => r.kind === kind && r.id === ref.id)) {
+        ui.toast('已在对话栏中', 'warn');
+        return false;
+      }
+      st.refs.push({ kind: kind, id: ref.id, name: ref.name, hint: ref.hint || '' });
+      drawRefs();
+      if (input) { input.focus(); }
+      ui.toast('已引用到对话栏');
+      return true;
+    }
+
+    function buildSendText(raw) {
+      const body = String(raw || '').trim();
+      if (!st.refs.length) return body;
+      const lines = st.refs.map(r => {
+        const label = REF_KIND[r.kind] || '引用';
+        return '【' + label + '】' + r.name + (r.hint ? '（' + r.hint + '）' : '');
+      });
+      return lines.join('\n') + (body ? '\n\n' + body : '\n\n请结合以上引用内容作答。');
+    }
 
     function drawControls() {
       $('#zoneSeg').innerHTML = P.ZONES.map(z => '<button data-zone="' + z.id + '" class="' + (st.zone === z.id ? 'on' : '') + '"' + (cfg.allowedModels.includes(z.id) ? '' : ' disabled title="该智能体未开放此模型"') + '>' + icon(z.id === 'external' ? 'globe' : 'shield-check') + z.label + '</button>').join('');
@@ -78,8 +136,8 @@
       if (scroll !== false) { const sc = $('#chatScroll'); sc.scrollTop = sc.scrollHeight; }
     }
 
-    async function send(text) {
-      text = String(text || '').trim();
+    async function send(raw) {
+      const text = buildSendText(raw);
       if (!text || st.busy) return;
       if (st.zone === 'external' && st.scope !== 'public' && !st.confirmed) {
         const ok = await egressConfirm();
@@ -95,6 +153,8 @@
       const runOpts = { zone: st.zone, scope: st.scope, mode: st.mode, config: cfg };
       const result = svc.compute(st.session, text, runOpts);
       st.busy = true; st.pending = { text, result, revealed: 0 };
+      st.refs = [];
+      drawRefs();
       input.value = ''; autosize(); drawControls(); drawMessages();
       const steps = result.turn.steps.length;
       const tick = () => {
@@ -123,15 +183,27 @@
       if (t.dataset.zone && !t.disabled) { st.zone = t.dataset.zone; drawControls(); return; }
       if (t.dataset.scope) { st.scope = t.dataset.scope; drawControls(); return; }
       if (t.dataset.mode) { st.mode = t.dataset.mode; drawControls(); return; }
+      if (t.dataset.refRm != null) {
+        const i = Number(t.dataset.refRm);
+        if (!Number.isNaN(i)) { st.refs.splice(i, 1); drawRefs(); }
+        return;
+      }
       if (t.id === 'sendBtn') { send(input.value); return; }
       if (t.dataset.suggest) { send(t.dataset.suggest); return; }
       const msg = msgAt(t);
       if (t.dataset.cite && msg) {
         const c = msg.turn.citations.find(x => x.n === Number(t.dataset.cite));
-        if (c) ui.openCitation(c, () => { toggleWrong(msg, c.n, true); });
+        if (c) {
+          if (c.kind === 'doc' && opts.openDocInWs) opts.openDocInWs(c.refId);
+          else ui.openCitation(c, () => { toggleWrong(msg, c.n, true); });
+        }
         return;
       }
-      if (t.dataset.doc) { ui.openDoc(t.dataset.doc); return; }
+      if (t.dataset.doc) {
+        if (opts.openDocInWs) opts.openDocInWs(t.dataset.doc);
+        else ui.openDoc(t.dataset.doc);
+        return;
+      }
       if (t.dataset.wrong && msg) { toggleWrong(msg, Number(t.dataset.wrong)); return; }
       if (t.dataset.fb && msg) { feedback(msg, t.dataset.fb); return; }
       if (t.dataset.act && msg) {
@@ -172,25 +244,35 @@
       persist(); drawMessages(false);
     }
 
-    drawControls(); drawMessages();
+    drawControls(); drawMessages(); drawRefs();
     return {
       destroy() { st.timers.forEach(clearTimeout); st.pending = null; },
-      reset() { st.timers.forEach(clearTimeout); st.session = null; st.pending = null; st.busy = false; st.confirmed = false; drawControls(); drawMessages(); },
+      reset() {
+        st.timers.forEach(clearTimeout);
+        st.session = null; st.pending = null; st.busy = false; st.confirmed = false; st.refs = [];
+        drawRefs(); drawControls(); drawMessages();
+      },
+      cite,
       get session() { return st.session; }
     };
   }
   AOS.chatPanel = mountPanel;
 
   AOS.views.chat = function (el, route) {
+    document.body.classList.add('mode-chat');
     const agent = svc.agent(route.agentId);
-    if (!agent) { el.innerHTML = '<div class="chat-blocked">' + icon('bot-off') + '<h3>找不到这个智能体</h3><p><a href="#/">返回智能体广场</a></p></div>'; return; }
+    if (!agent) {
+      el.innerHTML = '<div class="chat-blocked">' + icon('bot-off') + '<h3>找不到这个智能体</h3><p><a href="#/">返回智能体广场</a></p></div>';
+      return () => document.body.classList.remove('mode-chat');
+    }
     const user = svc.currentUser();
     const res = svc.resolve(agent, user);
     const name = (agent.draft || agent).name;
     AOS.setCrumbs([{ name: '智能体广场', href: '#/' }, { name }]);
     if (!res.ok) {
       el.innerHTML = '<div class="chat-blocked">' + icon(res.status === 'planned' ? 'calendar-clock' : 'lock') + '<h3>' + esc(name) + '暂不可用</h3><p>' + esc(res.reason) + '。</p><p style="margin-top:14px" class="row" ><a class="btn" href="#/">返回智能体广场</a><a class="btn" href="#/studio/' + agent.id + '">在工坊中查看配置</a></p></div>';
-      ui.icons(); return;
+      ui.icons();
+      return () => document.body.classList.remove('mode-chat');
     }
     const cfg = svc.configFor(agent, res.version);
     let session = route.sessionId ? store.state.sessions.find(s => s.id === route.sessionId && s.userId === user.id && s.agentId === agent.id) : null;
@@ -200,18 +282,193 @@
     const useVersion = session ? (agent.versions.find(v => v.id === session.version) || res.version) : res.version;
     const useCfg = session ? svc.configFor(agent, useVersion) : cfg;
 
-    el.innerHTML = '<div class="chat"><aside class="conv-list" aria-label="历史对话"><div class="conv-list-head"><a class="btn" style="width:100%" href="#/chat/' + agent.id + '">' + icon('plus') + '新对话</a></div><div class="conv-items" id="convItems"></div></aside><div class="grow" id="panel" style="display:flex;min-width:0"></div></div>';
+    const prefKey = (k) => 'aos.chat.' + k;
+    let convCollapsed = sessionStorage.getItem(prefKey('convCollapsed')) === '1';
+    let wsCollapsed = sessionStorage.getItem(prefKey('wsCollapsed')) === '1';
+    let wsFullscreen = sessionStorage.getItem(prefKey('wsFullscreen')) === '1';
+    if (wsCollapsed) wsFullscreen = false;
+    const WS_MIN = 220;
+    const WS_MAX = 520;
+    let wsWidth = Number(sessionStorage.getItem(prefKey('wsWidth'))) || 280;
+    if (wsWidth < WS_MIN) wsWidth = WS_MIN;
+    if (wsWidth > WS_MAX) wsWidth = WS_MAX;
+
+    el.innerHTML = '<div class="chat chat-with-ws' + (convCollapsed ? ' is-conv-collapsed' : '') + (wsCollapsed ? ' is-ws-collapsed' : '') + (wsFullscreen ? ' is-ws-fullscreen' : '') + '">' +
+      '<aside class="conv-list" id="convList" aria-label="历史对话">' +
+      '<div class="conv-list-head"><a class="btn grow" href="#/chat/' + agent.id + '">' + icon('plus') + '新对话</a>' +
+      '<button type="button" class="btn ghost sm icon" data-conv-collapse aria-label="收起历史">' + icon('panel-left-close') + '</button></div>' +
+      '<div class="conv-items" id="convItems"></div></aside>' +
+      '<div class="grow chat-center" id="chatCenter">' +
+      '<button type="button" class="chat-float-btn" data-conv-expand aria-label="展开历史">' + icon('panel-left-open') + '<span>历史</span></button>' +
+      '<div class="grow" id="panel" style="display:flex;min-width:0"></div>' +
+      '</div>' +
+      '<div class="agent-ws-resizer" id="wsResizer" role="separator" aria-orientation="vertical" aria-label="调整工作台宽度" tabindex="0"></div>' +
+      '<aside class="agent-ws" id="agentWs" aria-label="工作台"></aside></div>';
+
+    const root = el.querySelector('.chat');
+    const wsHost = el.querySelector('#agentWs');
+    const wsResizer = el.querySelector('#wsResizer');
+
+    function applyWsWidth() {
+      if (!root || !wsHost) return;
+      root.style.setProperty('--agent-ws-w', wsWidth + 'px');
+      wsHost.style.width = wsWidth + 'px';
+      wsHost.style.flexBasis = wsWidth + 'px';
+    }
+
+    function syncCollapse() {
+      if (wsCollapsed) wsFullscreen = false;
+      root.classList.toggle('is-conv-collapsed', convCollapsed);
+      root.classList.toggle('is-ws-collapsed', wsCollapsed);
+      root.classList.toggle('is-ws-fullscreen', wsFullscreen);
+      document.body.classList.toggle('is-ws-fullscreen', wsFullscreen);
+      sessionStorage.setItem(prefKey('convCollapsed'), convCollapsed ? '1' : '0');
+      sessionStorage.setItem(prefKey('wsCollapsed'), wsCollapsed ? '1' : '0');
+      sessionStorage.setItem(prefKey('wsFullscreen'), wsFullscreen ? '1' : '0');
+      const wsExpand = el.querySelector('[data-ws-expand]');
+      if (wsExpand) wsExpand.hidden = !wsCollapsed;
+      if (wsResizer) wsResizer.hidden = !!wsCollapsed || !!wsFullscreen;
+      if (ws && ws.setFullscreen) ws.setFullscreen(wsFullscreen);
+      applyWsWidth();
+      ui.icons();
+    }
+
     function drawList(activeId) {
       const mine = store.state.sessions.filter(s => s.agentId === agent.id && s.userId === user.id);
-      el.querySelector('#convItems').innerHTML = mine.length ? mine.map(s => '<a class="conv-item' + (s.id === activeId ? ' active' : '') + '" href="#/chat/' + agent.id + '/' + s.id + '"><div class="t">' + esc(s.title || '新对话') + '</div><div class="m">' + esc(s.updatedAt) + ' · ' + esc(s.version) + '</div></a>').join('') : '<div class="muted small" style="padding:8px 10px">还没有对话记录</div>';
+      const html = mine.length
+        ? mine.map(s => '<a class="conv-item' + (s.id === activeId ? ' active' : '') + '" href="#/chat/' + agent.id + '/' + s.id + '"><div class="t">' + esc(s.title || '新对话') + '</div><div class="m">' + esc(s.updatedAt) + ' · ' + esc(s.version) + '</div></a>').join('')
+        : '<div class="muted small" style="padding:8px 10px">还没有对话记录</div>';
+      const a = el.querySelector('#convItems');
+      if (a) a.innerHTML = html;
     }
     drawList(session && session.id);
-    const head = '<div class="chat-head"><div class="agent-icon">' + icon(useCfg.icon) + '</div><div class="grow"><h2>' + esc(useCfg.name) + '</h2><div class="row small muted">' + ui.status(res.status) + '<span class="badge outline">' + esc(useVersion.id) + '</span>' + (P.isLocked(useCfg) ? '<span class="badge">' + icon('lock') + '锁定内网模型</span>' : '') + '<span>' + esc(svc.category(useCfg.category).name) + '</span></div></div><a class="btn sm ghost" href="#/studio/' + agent.id + '">' + icon('boxes') + '在工坊中查看</a></div>';
+
+    const head = '<div class="chat-head">' +
+      '<div class="agent-icon">' + icon(useCfg.icon) + '</div><div class="grow"><h2>' + esc(useCfg.name) + '</h2><div class="row small muted">' +
+      ui.status(res.status) + '<span class="badge outline">' + esc(useVersion.id) + '</span>' +
+      (P.isLocked(useCfg) ? '<span class="badge">' + icon('lock') + '锁定内网模型</span>' : '') +
+      '<span>' + esc(svc.category(useCfg.category).name) + '</span></div></div>' +
+      '<button type="button" class="btn ghost sm" data-ws-expand aria-label="展开工作台" title="展开工作台" hidden>' +
+      icon('panel-right-open') + '<span>工作台</span></button></div>';
+
+    let ws = null;
     const panel = mountPanel(el.querySelector('#panel'), {
       agent, config: useCfg, version: useVersion, source: 'portal', session, head,
       onSession(s) { history.replaceState(null, '', '#/chat/' + agent.id + '/' + s.id); },
-      onCommit(s) { drawList(s.id); document.querySelector('.nav-item[href="#/sessions"] .count').textContent = store.state.sessions.length; }
+      onCommit(s) {
+        drawList(s.id);
+        const count = document.querySelector('.nav-item[href="#/sessions"] .count');
+        if (count) count.textContent = store.state.sessions.length;
+      },
+      openDocInWs(id) {
+        if (ws && ws.openDoc) {
+          wsCollapsed = false;
+          syncCollapse();
+          ws.openDoc(id);
+          return;
+        }
+        ui.openDoc(id);
+      }
     });
-    return () => panel.destroy();
+
+    if (wsHost) {
+      if (AOS.mountAgentWorkspace) {
+        ws = AOS.mountAgentWorkspace(wsHost, {
+          agentName: useCfg.name,
+          agentId: agent.id,
+          fullscreen: wsFullscreen,
+          onCollapse() { wsCollapsed = true; syncCollapse(); },
+          onToggleFullscreen() {
+            wsFullscreen = !wsFullscreen;
+            if (wsFullscreen) wsCollapsed = false;
+            syncCollapse();
+          },
+          onCite(ref) { if (panel && panel.cite) panel.cite(ref); }
+        });
+      } else {
+        wsHost.innerHTML = '<div class="agent-ws-head"><strong>智能体工作台</strong></div>';
+      }
+    }
+
+    function onFsKey(e) {
+      if (e.key === 'Escape' && wsFullscreen) {
+        wsFullscreen = false;
+        syncCollapse();
+      }
+    }
+    document.addEventListener('keydown', onFsKey);
+
+    el.querySelector('[data-conv-collapse]').addEventListener('click', () => {
+      convCollapsed = true;
+      syncCollapse();
+    });
+    el.querySelector('[data-conv-expand]').addEventListener('click', () => {
+      convCollapsed = false;
+      syncCollapse();
+    });
+    const wsExpandBtn = el.querySelector('[data-ws-expand]');
+    if (wsExpandBtn) {
+      wsExpandBtn.addEventListener('click', () => {
+        wsCollapsed = false;
+        syncCollapse();
+      });
+    }
+
+    let resizing = false;
+    let resizeStartX = 0;
+    let resizeStartW = 0;
+    function onResizeMove(e) {
+      if (!resizing) return;
+      const dx = resizeStartX - e.clientX;
+      let next = resizeStartW + dx;
+      if (next < WS_MIN) next = WS_MIN;
+      if (next > WS_MAX) next = WS_MAX;
+      wsWidth = next;
+      applyWsWidth();
+    }
+    function onResizeEnd() {
+      if (!resizing) return;
+      resizing = false;
+      root.classList.remove('is-ws-resizing');
+      document.body.classList.remove('is-col-resize');
+      sessionStorage.setItem(prefKey('wsWidth'), String(wsWidth));
+      document.removeEventListener('mousemove', onResizeMove);
+      document.removeEventListener('mouseup', onResizeEnd);
+    }
+    if (wsResizer) {
+      wsResizer.addEventListener('mousedown', e => {
+        if (wsCollapsed || wsFullscreen) return;
+        e.preventDefault();
+        resizing = true;
+        resizeStartX = e.clientX;
+        resizeStartW = wsWidth;
+        root.classList.add('is-ws-resizing');
+        document.body.classList.add('is-col-resize');
+        document.addEventListener('mousemove', onResizeMove);
+        document.addEventListener('mouseup', onResizeEnd);
+      });
+      wsResizer.addEventListener('dblclick', () => {
+        wsWidth = 280;
+        applyWsWidth();
+        sessionStorage.setItem(prefKey('wsWidth'), '280');
+      });
+      wsResizer.addEventListener('keydown', e => {
+        if (wsCollapsed || wsFullscreen) return;
+        if (e.key === 'ArrowLeft') { wsWidth = Math.min(WS_MAX, wsWidth + 16); applyWsWidth(); sessionStorage.setItem(prefKey('wsWidth'), String(wsWidth)); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { wsWidth = Math.max(WS_MIN, wsWidth - 16); applyWsWidth(); sessionStorage.setItem(prefKey('wsWidth'), String(wsWidth)); e.preventDefault(); }
+      });
+    }
+
+    syncCollapse();
+
+    return () => {
+      document.removeEventListener('keydown', onFsKey);
+      onResizeEnd();
+      panel.destroy();
+      if (ws) ws.destroy();
+      document.body.classList.remove('mode-chat');
+      document.body.classList.remove('is-col-resize');
+      document.body.classList.remove('is-ws-fullscreen');
+    };
   };
 })(window);

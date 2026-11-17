@@ -99,8 +99,9 @@
     let role = null;
     grants.forEach(g => {
       if (!g) return;
+      const depts = (AOS.org && AOS.org.userDepts) ? AOS.org.userDepts(user) : (user.dept ? [user.dept] : []);
       const match = (g.type === 'user' && g.id === user.id) ||
-        (g.type === 'dept' && g.id === user.dept);
+        (g.type === 'dept' && depts.indexOf(g.id) >= 0);
       if (!match) return;
       const rank = ROLE_RANK[g.role] || 0;
       if (rank > best) {
